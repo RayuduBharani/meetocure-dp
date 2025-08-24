@@ -12,11 +12,10 @@ import profileImg from "/assets/doc_profile.png";
 import TopIcons from "../../../components/PatientTopIcons";
 import axios from "axios";
 import { API_BASE_URL } from "../../../lib/config";
-import { useNotifications } from "../../../contexts/NotificationContext";
+import toast from "react-hot-toast";
 
 const PatientEditProfile = () => {
   const navigate = useNavigate();
-  const { success, error, loading: loadingNotification, dismissLoading, handleError, successMsg } = useNotifications();
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -31,14 +30,11 @@ const PatientEditProfile = () => {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get(
-          `${API_BASE_URL}/api/patient/profile`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const res = await axios.get(`${API_BASE_URL}/api/patient/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         let dob = res.data.dob || "";
         if (dob) {
@@ -54,7 +50,8 @@ const PatientEditProfile = () => {
           photo: res.data.photo || profileImg,
         });
       } catch (err) {
-        handleError(err, "Failed to fetch profile");
+        toast.error("Failed to fetch profile");
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -84,9 +81,7 @@ const PatientEditProfile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const loadingKey = "updateProfile";
-    loadingNotification(loadingKey, "Updating profile...");
+    toast.loading("Updating profile...");
 
     try {
       const token = localStorage.getItem("token");
@@ -106,22 +101,23 @@ const PatientEditProfile = () => {
         }
       );
 
-      dismissLoading(loadingKey);
-      success(successMsg("profileUpdate"));
+      toast.dismiss();
+      toast.success("Profile updated successfully!");
       navigate("/patient/profile");
     } catch (err) {
-      dismissLoading(loadingKey);
-      handleError(err, "Failed to update profile");
+      toast.dismiss();
+      toast.error("Failed to update profile");
+      console.error(err);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-lg text-gray-500">
-        Loading profile...
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center text-lg text-gray-500">
+  //       Loading profile...
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="min-h-screen bg-[#F9FAFC] font-[Poppins] px-6 pt-6 pb-28">
@@ -132,7 +128,9 @@ const PatientEditProfile = () => {
             className="text-2xl text-[#1F2A37] cursor-pointer"
             onClick={() => navigate(-1)}
           />
-          <h1 className="text-[22px] font-semibold text-[#1F2A37]">Edit Profile</h1>
+          <h1 className="text-[22px] font-semibold text-[#1F2A37]">
+            Edit Profile
+          </h1>
         </div>
         <TopIcons />
       </div>
@@ -157,7 +155,9 @@ const PatientEditProfile = () => {
         </label>
       </div>
 
-      <h2 className="text-center text-xl font-bold text-[#0A4D68] mb-10">Edit</h2>
+      <h2 className="text-center text-xl font-bold text-[#0A4D68] mb-10">
+        Edit
+      </h2>
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="max-w-xl mx-auto space-y-6">
@@ -203,17 +203,20 @@ const PatientEditProfile = () => {
 
         {/* Gender */}
         <div>
-          <label className="block text-sm font-medium mb-2 text-gray-700">Gender</label>
+          <label className="block text-sm font-medium mb-2 text-gray-700">
+            Gender
+          </label>
           <div className="flex flex-wrap gap-4">
             {["Male", "Female", "Other"].map((g) => (
               <button
                 type="button"
                 key={g}
                 onClick={() => handleGenderSelect(g)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition border shadow-sm ${form.gender === g
-                  ? "bg-[#0A4D68] text-white"
-                  : "bg-white text-[#1F2A37] border-gray-300"
-                  }`}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition border shadow-sm ${
+                  form.gender === g
+                    ? "bg-[#0A4D68] text-white"
+                    : "bg-white text-[#1F2A37] border-gray-300"
+                }`}
               >
                 <FaVenusMars />
                 {g}

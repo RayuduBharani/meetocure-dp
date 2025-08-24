@@ -5,7 +5,7 @@ import { Toaster } from "react-hot-toast";
 // Common
 import SplashScreen from "./pages/SplashScreen";
 import ChooseRoleScreen from "./pages/ChooseRoleScreen";
-
+import { NotificationProvider } from "./contexts/NotificationContext";
 // Doctor Side
 import DoctorDashboard from "./pages/doctor/DoctorDashboard";
 import DoctorAppointmentsPage from "./pages/doctor/DoctorAppointmentsPage";
@@ -107,6 +107,7 @@ function App() {
         path="/patient/appointments/*"
         element={
           <AppointmentContextProvider>
+            <NotificationProvider>
             <Routes>
               <Route path="" element={<DateTime />} />
               <Route path="datetime" element={<DateTime />} />
@@ -119,6 +120,7 @@ function App() {
               <Route path="*" element={<PageNotFound />} />
 
             </Routes>
+            </NotificationProvider>
           </AppointmentContextProvider>
         }
       />
