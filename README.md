@@ -4,7 +4,7 @@ Medical assistant web application (Node.js backend, Python ChatBot, React + Vite
 
 ##  Project Structure
 
-```text
+```
 MeetoCure/
 │
 ├── meetocure/
@@ -24,7 +24,6 @@ MeetoCure/
 │   │   └── ...
 │
 └── README.md
-
 
 ---
 
@@ -90,12 +89,12 @@ Default Vite port: 5173 (or check terminal)
 
 Create `.env` files for the backends. Minimal examples:
 
-server/.env
+server/.env(Best Practice Use the MongoDB Atlas)
 ```
-MONGO_URI=mongodb://localhost:27017/meetocure
+MONGO_URI=mongodb://localhost:27017/meetocure  
 PORT=5000
 FRONTEND_URL=http://localhost:5173
-JWT_SECRET=AduRxMtATeIpPPENcz-pEBY_-5zKKcnPnycQTWmuMGpcqq //Testing
+JWT_SECRET=your_secret_here
 ```
 
 ChatBot/.env (if required by your Python service)
@@ -107,8 +106,8 @@ DB_PATH=./chroma_db2
 
 frontend: if needed create `.env` with:
 ```
-VITE_GEMINI_API_KEY=AIzaSyAps9OlJIEG5eaKIh9DlG6OPFafdJ_KB_I // Do Not Share 
-VITE_GOOGLE_MAPS_API_KEY=AIzaSyAps9OlJIEG5eaKIh9DlG6OPFafdJ_KB_I // Do Not Share
+VITE_GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+VITE_GOOGLE_MAPS_API_KEY=YOUR_MAPS_API_KEY
 
 ```
 
