@@ -2,20 +2,29 @@
 
 Medical assistant web application (Node.js backend, Python ChatBot, React + Vite frontend).
 
+##  Project Structure
+
+```text
 MeetoCure/
 │
 ├── meetocure/
-│ ├── backend/ # FastAPI backend
-│ │ ├── main.py
-│ │ ├── requirements.txt
-│ │ └── ...
-│ │
-│ ├── frontend-ankit/ # React + Vite frontend
-│ │ ├── src/
-│ │ ├── package.json
-│ │ └── ...
+│   ├── server/            # Node.js backend
+│   │   ├── index.js
+│   │   ├── package.json
+│   │   └── ...
+│   │
+│   ├── ChatBot/           # FastAPI backend
+│   │   ├── main.py
+│   │   ├── requirements.txt
+│   │   └── ...
+│   │
+│   ├── frontend-ankit/    # React + Vite frontend
+│   │   ├── src/
+│   │   ├── package.json
+│   │   └── ...
 │
 └── README.md
+
 
 ---
 
