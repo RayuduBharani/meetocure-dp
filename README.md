@@ -64,7 +64,7 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install -r requirements.txt
-uvicorn main:app --reload --port 8001
+uvicorn main:app --reload
 ```
 
 3) Frontend (Vite + React)
@@ -130,24 +130,6 @@ VITE_GOOGLE_MAPS_API_KEY=AIzaSyAps9OlJIEG5eaKIh9DlG6OPFafdJ_KB_I // Do Not Share
 - Purge large commits with `bfg` or `git filter-repo` if needed (use with caution).
 
 ---
-
-## Cleaning git (recommended before deploy)
-
-Add to `.gitignore`:
-```
-ChatBot/chroma_db2/
-ChatBot/.venv/
-__pycache__/
-*.sqlite3
-*.pyc
-```
-
-To remove large tracked files (example using BFG):
-```bash
-bfg --delete-folders chroma_db2
-git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-```
 
 
 
