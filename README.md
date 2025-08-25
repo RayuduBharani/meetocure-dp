@@ -100,7 +100,7 @@ JWT_SECRET=your_secret_here
 ChatBot/.env (if required by your Python service)
 ```
 # example - depends on ChatBot code
-API_KEY=tgp_v1_Unwor2_awf0QTucEfzJK_nyvXDMPppHA4mQ3hR_GeEs
+API_KEY=tgp_v1_Unwor2_af0sddfcEfzJK_nyvXDMPppHA4mQ3hR_GeEs //Your TOGETHER_API_KEY
 DB_PATH=./chroma_db2
 ```
 
