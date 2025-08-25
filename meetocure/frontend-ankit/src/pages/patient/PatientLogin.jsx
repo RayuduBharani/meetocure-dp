@@ -78,8 +78,35 @@ const PatientLogin = () => {
 
       const { token, patient } = res.data;
       if (token) localStorage.setItem("token", token);
-      if (patient) localStorage.setItem("patient", JSON.stringify(patient));
-
+      if (patient) {
+        localStorage.setItem("patient", JSON.stringify(patient));
+        // store patientId for chat page compatibility (handle different backend shapes)
+        const pid = patient._id || patient.id || patient.patientId || null;
+        if (pid) {
+          localStorage.setItem("patientId", pid);
+          // also seed initial conversation with "Analyzing" message
+          try {
+            const conv = {
+              id: `conv_welcome_${Date.now()}`,
+              title: "Analyzing",
+              lastMessage: "Analyzing",
+              timestamp: Date.now(),
+              messages: [
+                {
+                  id: 'system-analyzing',
+                  content: "Analyzing",
+                  timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                  isUser: false
+                }
+              ]
+            };
+            localStorage.setItem(`chat_history_${pid}`, JSON.stringify([conv]));
+          } catch (e) {
+            // ignore localStorage errors
+          }
+        }
+      }
+      
       navigate("/patient-dashboard");
     } catch (e) {
       console.error("Verification error:", e.response?.data || e.message);

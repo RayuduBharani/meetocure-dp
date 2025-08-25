@@ -4,8 +4,10 @@
 /server/.env.local
 ChatBot/.env
 ChatBot/.venv
+ChatBot/chroma_db2/
 .venv/
 __pycache__/
+*.sqlite3
 *.pyc
 *.pyo
 *.pyd

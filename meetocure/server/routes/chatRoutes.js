@@ -1,7 +1,12 @@
+// routes/chatRoutes.js
 const express = require("express");
+const { chatWithFlaskAI, deleteChatsForPatient } = require("../controllers/chatCOntroller");
 const router = express.Router();
-const { chatWithFlaskAI } = require("../controllers/chatCOntroller");
 
-router.post("/chat", chatWithFlaskAI);
+router.post("/", chatWithFlaskAI);
+
+// Delete all chats for a patient
+// DELETE /api/chat/all/:patientId
+router.delete("/all/:patientId", deleteChatsForPatient);
 
 module.exports = router;
