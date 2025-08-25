@@ -30,7 +30,7 @@ const navItems = [
   { icon: <FaQuestionCircle />, label: "Enquiry", action: "openEnquiry" }, // ✅ New Enquiry item
 ];
 
-const SidebarNavPatient = () => {
+const SidebarNavPatient = ({ handleCategoryClick }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [isEnquiryOpen, setIsEnquiryOpen] = useState(false); // track enquiry modal
   const navigate = useNavigate();
@@ -110,7 +110,14 @@ const SidebarNavPatient = () => {
       <FloatingContactButton isBottomNavVisible={isBottomNavVisible} />
 
       {/* Patient Enquiry Modal */}
-      {isEnquiryOpen && <PatientEnquiryForm open={isEnquiryOpen} setOpen={setIsEnquiryOpen} />}
+       {/* ...sidebar code */}
+      {isEnquiryOpen && (
+        <PatientEnquiryForm
+          open={isEnquiryOpen}
+          setOpen={setIsEnquiryOpen}
+          handleCategoryClick={handleCategoryClick} // ✅ pass the function
+        />
+      )}
     </>
   );
 };

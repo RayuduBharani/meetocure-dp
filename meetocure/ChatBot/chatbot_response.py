@@ -1,0 +1,299 @@
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')  # ✅ Telugu output fix
+
+from langchain_community.document_loaders import PyMuPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_huggingface import HuggingFaceEmbeddings
+import os
+from dotenv import load_dotenv
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain.memory import ConversationBufferMemory
+from langchain_together import ChatTogether
+from langchain_community.vectorstores import Chroma
+from langdetect import detect
+from langchain_core.messages import HumanMessage, SystemMessage
+import re
+
+class MedicalAssistant:
+    def __init__(self):
+        """Initialize the Medical Assistant with all required components"""
+        # Load environment variables
+        load_dotenv()
+        self.TOGETHER_API_KEY = os.environ.get('TOGETHER_API_KEY')
+        
+        # Initialize components
+        self._load_documents()
+        self._setup_vectorstore()
+        self._setup_llm()
+        self._setup_memory()
+        
+        # Telugu transliteration patterns
+        self.telugu_patterns = [
+            r'\b(ela|ela unnav|em cheyali|em chesav|baagunnava|eppudu|ekkada|entha|enduku)\b',
+            r'\b(nenu|meeru|memu|vaaru|iddaru|mana|mi|na)\b',
+            r'\b(cheppu|cheppandi|help|kavali|undi|ledhu|avunu|kadhu)\b'
+        ]
+    
+    def _load_documents(self):
+        """Load and process the medical encyclopedia"""
+        document = PyMuPDFLoader(file_path=r"A-Z Family Medical Encyclopedia.pdf", mode='single')
+        docs = document.load()
+
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000,
+            chunk_overlap=50,
+            length_function=len,
+            is_separator_regex=False,
+        )
+
+        text_data = [doc.page_content for doc in docs]
+        self.texts = text_splitter.create_documents(text_data)
+    
+    def _setup_vectorstore(self):
+        """Setup vector store for document retrieval"""
+        embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        chroma_db_path = "chroma_db2"
+
+        self.vectorstore = Chroma.from_documents(
+            self.texts,
+            embeddings,
+            persist_directory=chroma_db_path
+        )
+        self.retriever = self.vectorstore.as_retriever(search_kwargs={"k": 5})
+    
+    def _setup_llm(self):
+        """Setup the language model"""
+        self.llm_model = ChatTogether(
+            together_api_key=self.TOGETHER_API_KEY,
+            model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
+            max_tokens=800
+        )
+    
+    def _setup_memory(self):
+        """Setup conversation memory"""
+        message_history = ChatMessageHistory()
+        self.memory = ConversationBufferMemory(
+            chat_memory=message_history,
+            memory_key="chat_history",
+            input_key="question",
+            output_key="answer",
+            return_messages=True,
+            human_prefix="Human",
+            ai_prefix="AI",
+        )
+    
+    def _detect_language_enhanced(self, text):
+        """Enhanced language detection including transliterated Telugu"""
+        try:
+            # First check for actual Telugu script
+            detected = detect(text)
+            if detected == 'te':
+                return 'te'
+        except:
+            pass
+        
+        # Check for transliterated Telugu patterns
+        text_lower = text.lower()
+        for pattern in self.telugu_patterns:
+            if re.search(pattern, text_lower):
+                return 'te_transliterated'
+        
+        return 'en'
+    
+    def _is_greeting_or_casual(self, text):
+        """Check if the input is a greeting or casual conversation"""
+        casual_patterns = [
+            r'\b(hi|hello|hey|hola|namaste|vanakkam)\b',
+            r'\b(how are you|how r u|whats up|sup|wassup)\b',
+            r'\b(good morning|good evening|good afternoon)\b',
+            r'\b(ela unnav|ela unnaav|baagunnava|ela undi)\b',
+            r'\b(thank you|thanks|bye|goodbye|see you)\b'
+        ]
+        
+        text_lower = text.lower().strip()
+        for pattern in casual_patterns:
+            if re.search(pattern, text_lower):
+                return True
+        
+        return len(text_lower.split()) <= 3 and any(word in text_lower for word in ['hi', 'hello', 'hey', 'ela'])
+    
+    def _handle_greeting(self, text, language):
+        """Handle greetings and casual conversation"""
+        if language == 'te' or language == 'te_transliterated':
+            greetings = {
+                'hi': 'హాయ్! నేను మెడికల్ అసిస్టెంట్. మీ ఆరోగ్య సమస్యల గురించి అడగండి.',
+                'hello': 'హలో! ఏదైనా వైద్య ప్రశ్న ఉందా?',
+                'ela unnav': 'నేను బాగున్నాను! మీకు ఏదైనా ఆరోగ్య సమస్య ఉందా?',
+                'baagunnava': 'హాయ్! నేను మెడికల్ హెల్ప్ కోసం ఇక్కడ ఉన్నాను.',
+                'thank': 'మీకు సహాయం చేయగలిగినందుకు సంతోషం!',
+                'bye': 'మంచిదినం! అవసరమైతే తిరిగి రండి.'
+            }
+            
+            text_lower = text.lower()
+            for key, response in greetings.items():
+                if key in text_lower:
+                    return response
+            
+            return 'హాయ్! నేను మీ మెడికల్ అసిస్టెంట్. ఏదైనా ఆరోగ్య ప్రశ్న అడగండి.'
+        
+        else:  # English
+            greetings = {
+                'hi': 'Hi! I\'m your medical assistant. Ask me any health-related questions.',
+                'hello': 'Hello! Do you have any medical questions today?',
+                'how are you': 'I\'m doing well! Do you have any health concerns I can help with?',
+                'thank': 'You\'re welcome! Happy to help with your health questions.',
+                'bye': 'Goodbye! Feel free to return if you have any medical questions.'
+            }
+            
+            text_lower = text.lower()
+            for key, response in greetings.items():
+                if key in text_lower:
+                    return response
+            
+            return 'Hello! I\'m your medical assistant. How can I help you with your health questions today?'
+    
+    def _build_dynamic_prompt(self, user_input, chat_history, context, language):
+        """Build language-specific prompts"""
+        if language == 'te' or language == 'te_transliterated':  # Telugu prompt
+            return f"""
+మీరు ఒక జ్ఞానపూర్వక AI వైద్య సహాయకుడిగా వ్యవహరించాలి. 
+ఎల్లప్పుడూ తెలుగు లో స్పష్టంగా మరియు స్నేహపూర్వకంగా సమాధానం ఇవ్వండి. 
+సమాధానం చిన్నదిగా (1-2 వాక్యాలు) కానీ అర్థవంతంగా ఉండాలి.
+
+మునుపటి సంభాషణ:
+{chat_history}
+
+ప్రశ్న:
+{user_input}
+
+పత్రాల నుండి సందర్భ సమాచారం:
+{context}
+
+సూచనలు:
+- తెలుగు లోనే సమాధానం ఇవ్వాలి.  
+- సమాధానం చిన్నదిగా (1-2 వాక్యాలు) కానీ పూర్తిగా ఉండాలి.
+- ఎప్పుడూ వాక్యం మధ్యలో ఆపకండి
+- అర్థవంతమైన మరియు పూర్తిస్థాయి వాక్యాలను మాత్రమే ఇవ్వండి.  
+- క్లిష్ట పదాలను సులభంగా వివరించాలి.  
+
+మీ సమాధానం:
+"""
+        else:  # English prompt
+            return f"""
+You are a knowledgeable AI medical assistant. 
+Always reply clearly in English. 
+Keep the answer short (1-2 sentences) but meaningful.
+
+Previous conversation:
+{chat_history}
+
+Question:
+{user_input}
+
+Context information from documents:
+{context}
+
+Instructions:
+- Answer only in **English**.  
+- Keep the answer short (1-2 sentences) but complete. 
+- Never stop in the middle of a sentence.
+- Use meaningful and complete sentences only. 
+- Explain complex medical terms in simple words.  
+
+Your Answer:
+"""
+    
+    def get_chatbot_response(self, text: str) -> str:
+        """
+        Main chatbot function for frontend integration
+        Args:
+            text (str): User's question/input
+        Returns:
+            str: AI assistant's response
+        """
+        try:
+            # Enhanced language detection
+            language = self._detect_language_enhanced(text)
+            
+            # Handle greetings and casual conversation
+            if self._is_greeting_or_casual(text):
+                response = self._handle_greeting(text, language)
+                self.memory.save_context({"question": text}, {"answer": response})
+                return response
+            
+            # For medical questions, get relevant documents
+            docs = self.retriever.invoke(text)
+            context = "\n\n".join([doc.page_content for doc in docs])
+            
+            # Build dynamic prompt
+            dynamic_prompt = self._build_dynamic_prompt(text, self.memory.buffer_as_str, context, language)
+
+            # Get response from LLM
+            result = self.llm_model.invoke([
+                SystemMessage(content=dynamic_prompt),
+                HumanMessage(content=text)
+            ])
+
+            # Store in memory for context
+            self.memory.save_context({"question": text}, {"answer": result.content})
+            
+            return result.content
+
+        except Exception as e:
+            language = self._detect_language_enhanced(text)
+            if language == 'te' or language == 'te_transliterated':
+                return "క్షమించండి, మీ ప్రశ్నను ప్రాసెస్ చేయలేకపోయాను. మరోసారి ప్రయత్నించండి."
+            else:
+                return "I'm sorry, I couldn't process your request. Please try again."
+    
+    def clear_conversation_history(self):
+        """Clear the conversation memory - useful for new chat sessions"""
+        self.memory.clear()
+    
+    def get_conversation_history(self):
+        """Get current conversation history - useful for frontend display"""
+        return self.memory.buffer_as_str
+
+# Global instance for easy import
+medical_assistant = None
+
+def initialize_medical_assistant():
+    """Initialize the medical assistant - call this once when your app starts"""
+    global medical_assistant
+    if medical_assistant is None:
+        medical_assistant = MedicalAssistant()
+    return medical_assistant
+
+def get_chatbot_response(text: str) -> str:
+    """
+    Simple function for easy frontend integration
+    Args:
+        text (str): User's question
+    Returns:
+        str: AI response
+    """
+    global medical_assistant
+    if medical_assistant is None:
+        medical_assistant = initialize_medical_assistant()
+    
+    return medical_assistant.get_chatbot_response(text)
+
+def clear_chat_history():
+    """Clear conversation history"""
+    global medical_assistant
+    if medical_assistant:
+        medical_assistant.clear_conversation_history()
+        
+        
+if __name__ == "__main__":
+    assistant = initialize_medical_assistant()
+
+    print("Medical Assistant is ready! Type your question (or 'quit' to exit):")
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() in ["quit", "exit", "bye"]:
+            print("Assistant: Goodbye! Stay healthy.")
+            break
+        response = assistant.get_chatbot_response(user_input)
+        print("Assistant:", response)

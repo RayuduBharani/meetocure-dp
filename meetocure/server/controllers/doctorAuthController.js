@@ -18,13 +18,13 @@ const sendOtp = async (req, res) => {
     const { phone } = req.body;
     if (!phone) return res.status(400).json({ message: "Phone required" });
 
-    const existingPatient = await Patient.findOne({ phone: `+91${phone}` });
+    const existingPatient = await Patient.findOne({phone});
     if (existingPatient) {
       return res.status(400).json({ message: "This phone is already registered as a patient" });
     }
     // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log("otp is", otp);
+
     const salt = await bcrypt.genSalt(10);
     const codeHash = await bcrypt.hash(otp, salt);
 
@@ -38,8 +38,8 @@ const sendOtp = async (req, res) => {
       messagingServiceSid: TWILIO_MESSAGING_SERVICE_SID,
       to: phone,
     });
-    console.log(`OTP sent to ${phone}: ${otp}`);
 
+    console.log(`OTP for ${phone}: ${otp}`); // For testing purposes only
     const doctor = await Doctor.findOne({ mobileNumber: phone });
     return res.json({
       success: true,
@@ -90,7 +90,6 @@ const verifyOtp = async (req, res) => {
 // ========== REGISTER / LOGIN ==========
 const doctorAuth = async (req, res) => {
   try {
-    console.log("Doctor Auth Request:", req.body);
     const { email, password, mobileNumber } = req.body;
 
     const existingPatient = await Patient.findOne({ phone: mobileNumber });

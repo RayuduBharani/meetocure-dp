@@ -1,4 +1,3 @@
-"use client";
 import { useState } from "react";
 import {
   AlertDialog,
@@ -13,7 +12,7 @@ import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import toast, { Toaster } from "react-hot-toast";
 
-export default function PatientEnquiryForm({ open, setOpen }) {
+export default function PatientEnquiryForm({ open, setOpen,handleCategoryClick }) {
   const [formData, setFormData] = useState({
     symptoms: "",
     started: "",
@@ -21,22 +20,53 @@ export default function PatientEnquiryForm({ open, setOpen }) {
     expectations: "",
   });
 
+const symptomCategoryMap = {
+  chest: "Cardiology",
+  heart: "Cardiology",
+  teeth: "Dentistry",
+  cough: "Pulmonary",
+  asthma: "Pulmonary",
+  fever: "General",
+  headache: "Neurology",
+  stomach: "Gastroen",
+  liver: "Gastroen",
+  child: "General",
+  lab: "Laboratory",
+  vaccination: "Vaccination",
+};
+
+const placeholders = {
+  symptoms: "e.g. chest pain, persistent cough, high fever",
+  started: "e.g. started 3 days ago / since last week",
+  advice: "e.g. took paracetamol, visited clinic, used inhaler",
+  expectations: "e.g. want diagnosis, specialist consult, lab tests",
+};
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = () => {
-    if (!formData.symptoms || !formData.started || !formData.advice || !formData.expectations) {
-      toast.error("⚠️ Please fill out all fields");
-      return;
-    }
+const handleSubmit = () => {
+  if (!formData.symptoms || !formData.started || !formData.advice || !formData.expectations) {
+    toast.error("Please fill all fields", { duration: 1500 });
+    return;
+  }
 
-    console.log("Form submitted:", formData);
-    toast.success("✅ Enquiry submitted successfully");
+  const words = formData.symptoms.toLowerCase().split(" ");
+  const matchedCategories = words
+    .map((w) => symptomCategoryMap[w])
+    .filter(Boolean);
 
-    setFormData({ symptoms: "", started: "", advice: "", expectations: "" });
-    setOpen(false); // close after submit
-  };
+  if (matchedCategories.length === 0) {
+    toast.error("No matching category found");
+    return;
+  }
+
+  handleCategoryClick(matchedCategories[0]); // call the dashboard function
+  setOpen(false); // close modal
+  setFormData({ symptoms: "", started: "", advice: "", expectations: "" });
+  toast.success("Doctors & hospitals filtered successfully");
+};
+
 
   return (
     <>
@@ -50,21 +80,21 @@ export default function PatientEnquiryForm({ open, setOpen }) {
         className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4"
       />
       <AlertDialogTitle className="text-xl sm:text-2xl font-bold text-[#004B5C]">
-        Patient Enquiry
+        Struggling to find a doctor?
       </AlertDialogTitle>
       <AlertDialogDescription className="text-sm sm:text-base text-[#2D3A3A] mt-2">
-        Please answer a few questions to help us match you with the right doctor.
+        Tell us your symptoms below and we'll suggest the right specialist and nearby facilities.
       </AlertDialogDescription>
     </AlertDialogHeader>
 
     <div className="grid gap-4 sm:gap-5 py-4 px-4 sm:px-6">
-      {["symptoms", "started", "advice", "expectations"].map((field, idx) => (
+            {["symptoms", "started", "advice", "expectations"].map((field, idx) => (
         <div key={idx}>
           <label className="block text-left text-sm sm:text-base font-semibold mb-2 text-[#004B5C]">
             {idx + 1}. {field.charAt(0).toUpperCase() + field.slice(1)}?
           </label>
           <Input
-            placeholder={`Enter ${field}...`}
+            placeholder={placeholders[field] || `Enter ${field}...`}
             name={field}
             value={formData[field]}
             onChange={handleChange}
@@ -92,3 +122,4 @@ export default function PatientEnquiryForm({ open, setOpen }) {
     </>
   );
 }
+

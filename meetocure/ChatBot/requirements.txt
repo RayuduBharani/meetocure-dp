@@ -1,0 +1,14 @@
+ # Minimal requirements for chatbot_response.py
+ fastapi
+ uvicorn[standard]
+ langchain>=0.0.300
+ langchain-community
+ langchain-huggingface
+ langchain-together
+ python-dotenv
+ PyMuPDF
+ chromadb
+ sentence-transformers
+ langdetect
+
+ 

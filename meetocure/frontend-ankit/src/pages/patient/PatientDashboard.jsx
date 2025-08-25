@@ -48,7 +48,6 @@ const PatientDashboard = () => {
 
   const handleCategoryClick = (category) => {
     setSelectedCategory(category);
-
     // Get the search terms for this category
     const searchTerms = categoryMapping[category.toLowerCase()] || [category];
 
@@ -68,7 +67,7 @@ const PatientDashboard = () => {
         (hospital.type || '').toLowerCase().includes(term.toLowerCase())
       )
     );
-
+    console.log(doctors);
     setFilteredDoctors(doctors);
     setFilteredHospitals(hospitals);
   };
@@ -130,7 +129,10 @@ const PatientDashboard = () => {
 
   return (
     <div className="flex font-[Poppins] bg-[#F8FAFC] min-h-screen">
-      <SidebarNavPatient />
+     <SidebarNavPatient 
+  handleCategoryClick={handleCategoryClick} 
+/>
+
       <div className="flex-1 min-h-screen px-6 py-6 pb-20 md:pb-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
