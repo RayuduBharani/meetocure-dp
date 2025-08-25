@@ -11,7 +11,7 @@ const ChooseRoleScreen = () => {
   };
 
   const handleEmergencyCall = () => {
-   navigate("/patient//emergency-contact");
+   navigate("/patient/emergency-contact");
   };
 
   return (
