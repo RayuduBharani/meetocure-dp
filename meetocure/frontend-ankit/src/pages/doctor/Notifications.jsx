@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import NotificationItem from "../../components/NotificationItem";
 import TopIcons from "../../components/TopIcons";
 import { API_BASE_URL } from "../../lib/config";
+import { socket, joinSocketRoom, onReceiveNotification, onNotificationDeleted } from "../../lib/socket";
 
 const formatRelative = (isoStr) => {
   try {
@@ -85,7 +86,7 @@ const Notifications = () => {
       setItems((prev) =>
         prev.map((x) => (x._id === n._id ? { ...x, read: true } : x))
       );
-    } catch (_) {}
+    } catch (_) { }
 
     const fallback = localStorage.getItem("doctorToken")
       ? "/doctor/appointments"
@@ -95,6 +96,29 @@ const Notifications = () => {
 
   useEffect(() => {
     fetchNotifications();
+
+    // Join socket room with user ID
+    const userId = localStorage.getItem('userId');
+    if (userId) {
+      joinSocketRoom(userId);
+    }
+
+    // Listen for new notifications
+    onReceiveNotification((notification) => {
+      setItems(prev => [notification, ...prev]);
+      toast.success(notification.message || 'New notification received');
+    });
+
+    // Listen for deleted notifications
+    onNotificationDeleted((notificationId) => {
+      setItems(prev => prev.filter(item => item._id !== notificationId));
+    });
+
+    // Cleanup socket listeners
+    return () => {
+      socket.off('receiveNotification');
+      socket.off('notificationDeleted');
+    };
   }, []);
 
   return (

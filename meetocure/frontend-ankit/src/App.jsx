@@ -53,85 +53,95 @@ import DoctorVerify from "./pages/doctor/DoctorVerify";
 import { DoctorVerification } from "./pages/doctor/DoctorVerification";
 import PatientPublicForm from "./pages/patient/PatientEnquery/PatientPublicForm";
 import PatientSos from "./pages/patient/SOS/PatientSos";
-
+import SendNotification from './components/SendNotification.jsx';
+import NotificationsList from './components/NotificationList.jsx';
+const userId = 'PATIENT_OBJECT_ID';
 
 function App() {
   return (
     <>
-    <Routes>
-      {/* Common Routes */}
-      <Route path="/" element={<SplashScreen />} />
-      <Route path="/choose-role" element={<ChooseRoleScreen />} />
-      <Route path="/dual-patient" element={<PatientLogin />} />
-      <Route path="/dual-doctor" element={<DoctorVerify />} />
+      <Routes>
+        {/* Common Routes */}
+        <Route path="/" element={<SplashScreen />} />
+        <Route path="/choose-role" element={<ChooseRoleScreen />} />
+        <Route path="/dual-patient" element={<PatientLogin />} />
+        <Route path="/dual-doctor" element={<DoctorVerify />} />
 
-      {/* Doctor Routes */}
-      <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
-      <Route path="/doctor/appointments" element={<DoctorAppointmentsPage />} />
-      <Route path="/doctor/patient/:id" element={<DoctorPatientDetailsPage />} />
-      <Route path="/doctor/stats" element={<QuickStatsPage />} />
-      <Route path="/doctor/availability" element={<DoctorAvailability />} />
-      <Route path="/doctor/availability/change" element={<ChangeAvailability />} />
-      <Route path="/doctor/availability/add" element={<AddAvailability />} />
-      <Route path="/doctor/profile" element={<DoctorProfilePage />} />
-      <Route path="/doctor/profile/edit" element={<EditProfile />} />
-      <Route path="/doctor/notifications" element={<Notifications />} />
-      <Route path="/doctor/ai-chat" element={<ChatAI />} />
-      <Route path="/doctor/settings" element={<Settings />} />
-      <Route path="/doctor/help" element={<HelpSupport />} />
-      <Route path="/doctor/terms" element={<TermsConditions />} />
-      <Route path="/doctor-verification" element={<DoctorVerification />} />
+        {/* Doctor Routes */}
+        <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
+        <Route path="/doctor/appointments" element={<DoctorAppointmentsPage />} />
+        <Route path="/doctor/patient/:id" element={<DoctorPatientDetailsPage />} />
+        <Route path="/doctor/stats" element={<QuickStatsPage />} />
+        <Route path="/doctor/availability" element={<DoctorAvailability />} />
+        <Route path="/doctor/availability/change" element={<ChangeAvailability />} />
+        <Route path="/doctor/availability/add" element={<AddAvailability />} />
+        <Route path="/doctor/profile" element={<DoctorProfilePage />} />
+        <Route path="/doctor/profile/edit" element={<EditProfile />} />
+        <Route path="/doctor/notifications" element={<Notifications />} />
+        <Route path="/doctor/ai-chat" element={<ChatAI />} />
+        <Route path="/doctor/settings" element={<Settings />} />
+        <Route path="/doctor/help" element={<HelpSupport />} />
+        <Route path="/doctor/terms" element={<TermsConditions />} />
+        <Route path="/doctor-verification" element={<DoctorVerification />} />
 
-      {/* Patient Routes */}
-      <Route path="/patient-dashboard" element={<PatientDashboard />} />
-      <Route path="/patient/profile" element={<PatientProfilePage />} />
-      <Route path="/patient/profile/edit" element={<PatientEditProfile />} />
-      <Route path="/patient/settings" element={<PatientSettings />} />
-      <Route path="/patient/notifications" element={<Notifications />} />
-      <Route path="/patient/calendar" element={<PatientAppointView />} />
-      <Route path="/patient/emergency-contact" element={<PatientSos />} />  
-      <Route path="/patient/help" element={<Help />} />
-      <Route path="/patient/terms" element={<Terms />} />
-      <Route path="/location" element={<Location />} />
-      <Route path="/patient/chat" element={<ChatPage />} />
-      <Route path="/patient/contact-us" element={<ContactUs />} />
-      <Route path="/patient/hospitals" element={<HospitalsPage />} />
-      <Route path="/patient/wallet" element={<WalletPage />} />
-      <Route path="/doctorspages/Cards-data" element={<CardsData />} />
-      <Route path="/hospitalpages/Cards-data" element={<HospitalCardsData />} />
-      <Route path="/details/:id" element={<DetailPage />} />
-      <Route path="/details/:type/:id" element={<DetailsPage />} />
-      <Route path="/hospital/:hospitalId/doctors" element={<HospitalDoctorsPage />} />
-      <Route path="/patient/appointments/Query" element={<PatientPublicForm />} />
+        {/* Patient Routes */}
+        <Route path="/patient-dashboard" element={<PatientDashboard />} />
+        <Route path="/patient/profile" element={<PatientProfilePage />} />
+        <Route path="/patient/profile/edit" element={<PatientEditProfile />} />
+        <Route path="/patient/settings" element={<PatientSettings />} />
+        <Route path="/patient/notifications" element={<Notifications />} />
+        <Route path="/patient/calendar" element={<PatientAppointView />} />
+        <Route path="/patient/emergency-contact" element={<PatientSos />} />
+        <Route path="/patient/help" element={<Help />} />
+        <Route path="/patient/terms" element={<Terms />} />
+        <Route path="/location" element={<Location />} />
+        <Route path="/patient/chat" element={<ChatPage />} />
+        <Route path="/patient/contact-us" element={<ContactUs />} />
+        <Route path="/patient/hospitals" element={<HospitalsPage />} />
+        <Route path="/patient/wallet" element={<WalletPage />} />
+        <Route path="/doctorspages/Cards-data" element={<CardsData />} />
+        <Route path="/hospitalpages/Cards-data" element={<HospitalCardsData />} />
+        <Route path="/details/:id" element={<DetailPage />} />
+        <Route path="/details/:type/:id" element={<DetailsPage />} />
+        <Route path="/hospital/:hospitalId/doctors" element={<HospitalDoctorsPage />} />
+        <Route path="/patient/appointments/Query" element={<PatientPublicForm />} />
 
-      {/* Patient Appointment Flow (Wrapped in Context) */}
-      <Route
-        path="/patient/appointments/*"
-        element={
-          <AppointmentContextProvider>
-            <NotificationProvider>
-            <Routes>
-              <Route path="" element={<DateTime />} />
-              <Route path="datetime" element={<DateTime />} />
-              <Route path="patient-detail" element={<PatientDetails />} />
+        {/* Notifications Route */}
+        <Route path="/notifications" element={
+          <>
+            <SendNotification userId={userId} />
+            <NotificationsList userId={userId} />
+          </>
+        } />
 
-              <Route path="payment" element={<Payment />} />
+        {/* Patient Appointment Flow (Wrapped in Context) */}
+        <Route
+          path="/patient/appointments/*"
+          element={
+            <AppointmentContextProvider>
+              <NotificationProvider>
+                <Routes>
+                  <Route path="" element={<DateTime />} />
+                  <Route path="datetime" element={<DateTime />} />
+                  <Route path="patient-detail" element={<PatientDetails />} />
 
-              {/* Add payment page when ready */}
-              <Route path="payment" element={<Payment />} />
-              <Route path="*" element={<PageNotFound />} />
+                  <Route path="payment" element={<Payment />} />
 
-            </Routes>
-            </NotificationProvider>
-          </AppointmentContextProvider>
-        }
-      />
+                  {/* Add payment page when ready */}
+                  <Route path="payment" element={<Payment />} />
+                  <Route path="*" element={<PageNotFound />} />
 
-      {/* 404 */}
-      <Route path="*" element={<PageNotFound />} />
-       
-    </Routes>
-    <Toaster position="top-right" />
+                </Routes>
+              </NotificationProvider>
+            </AppointmentContextProvider>
+          }
+        />
+
+        {/* 404 */}
+        <Route path="*" element={<PageNotFound />} />
+
+      </Routes>
+      <Toaster position="top-right" />
     </>
   );
 }

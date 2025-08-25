@@ -2,7 +2,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const Doctor = require("../models/DoctorShema");
 const Otp = require("../models/Otp");
-const Patient = require("../models/Patient"); // ✅ Import Patient schema
+const Patient = require("../models/Patient");
+const Notification = require("../models/Notification");
 const twilio = require("twilio");
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -17,13 +18,13 @@ const sendOtp = async (req, res) => {
     const { phone } = req.body;
     if (!phone) return res.status(400).json({ message: "Phone required" });
 
-    const existingPatient = await Patient.findOne({phone:`+91${phone}`});
+    const existingPatient = await Patient.findOne({ phone: `+91${phone}` });
     if (existingPatient) {
       return res.status(400).json({ message: "This phone is already registered as a patient" });
     }
     // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  console.log("otp is",otp);
+    console.log("otp is", otp);
     const salt = await bcrypt.genSalt(10);
     const codeHash = await bcrypt.hash(otp, salt);
 
@@ -98,7 +99,7 @@ const doctorAuth = async (req, res) => {
     }
 
     let doctor = await Doctor.findOne({ email });
- 
+
     if (!doctor) {
       // Register new doctor
       const salt = await bcrypt.genSalt(10);
@@ -110,6 +111,27 @@ const doctorAuth = async (req, res) => {
         mobileNumber,
         registrationStatus: "pending_verification",
       });
+
+      // Emit socket event for new doctor registration
+      try {
+        const io = req.app.get('io');
+        const notification = await Notification.create({
+          message: `New doctor registration: ${email}`,
+          type: 'DOCTOR_REGISTRATION',
+          isRead: false,
+          createdAt: new Date()
+        });
+
+        io.emit('receiveNotification', {
+          type: 'DOCTOR_REGISTRATION',
+          message: `New doctor registration: ${email}`,
+          doctorId: doctor._id,
+          notificationId: notification._id
+        });
+      } catch (error) {
+        console.error('Failed to send notification:', error);
+      }
+
       return res.json({
         message: "Registration submitted, pending verification",
         doctorId: doctor._id,

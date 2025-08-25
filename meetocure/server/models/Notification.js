@@ -1,15 +1,12 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
-const NotificationSchema = new mongoose.Schema(
-  {
-    from: { type: String, required: true },   // sender userId/username
-    to:   { type: String, required: true },   // receiver userId/username
-    message: { type: String, required: true },
-    read: { type: Boolean, default: false }
-  },
-  { timestamps: true }
-);
+const notificationSchema = new mongoose.Schema({
+  message: { type: String, required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient' }, // Made optional for system notifications
+  type: { type: String, enum: ['DOCTOR_REGISTRATION', 'APPOINTMENT', 'GENERAL'], default: 'GENERAL' },
+  isRead: { type: Boolean, default: false },
+  metadata: { type: mongoose.Schema.Types.Mixed }, // For additional data like doctorId
+  createdAt: { type: Date, default: Date.now }
+});
 
-NotificationSchema.index({ to: 1, createdAt: -1 });
-
-module.export = mongoose.model("Notification", NotificationSchema);
+module.exports = mongoose.model('Notification', notificationSchema);
