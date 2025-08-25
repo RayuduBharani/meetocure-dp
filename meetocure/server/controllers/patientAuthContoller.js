@@ -43,11 +43,12 @@ exports.sendOtp = async (req, res) => {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    await client.messages.create({
-      body: `Your verification code is From MeetOCure: ${otp}. It expires in 2 minutes.`,
-      messagingServiceSid: TWILIO_MESSAGING_SERVICE_SID,
-      to: phone, 
-    });
+    // await client.messages.create({
+    //   body: `Your verification code is From MeetOCure: ${otp}. It expires in 2 minutes.`,
+    //   messagingServiceSid: TWILIO_MESSAGING_SERVICE_SID,
+    //   to: phone, 
+    // });
+    console.log(`OTP for ${phone}: ${otp}`);  // ✅ Log OTP for testing
 
     return res.json({ success: true, message: "OTP sent" });  // ✅ should always return
   } catch (err) {

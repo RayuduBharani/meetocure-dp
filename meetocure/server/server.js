@@ -6,9 +6,6 @@ const PatientAuth = require("./routes/patientAuthRoutes");
 const doctorAuthRoutes = require("./routes/doctorAuthRoute");
 const { verifyDoctor } = require("./routes/DoctorVerification");
 const doctorVerifyRoutes = require("./routes/DoctorVerification");
-const http = require('http');
-const { Server } = require('socket.io');
-const Notification = require('./models/Notification');
 dotenv.config();
 connectDB();
 
@@ -22,44 +19,6 @@ const allowedOrigins = [
 ];
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "*", // Allow all origins temporarily for testing
-    methods: ["GET", "POST"],
-    credentials: false,
-    allowedHeaders: ["*"]
-  },
-  transports: ['polling', 'websocket'],
-  pingTimeout: 60000,
-  pingInterval: 25000,
-});
-
-app.set('io', io); // Make io accessible in routes
-
-io.on('connection', (socket) => {
-  // Join room for userId (frontend should emit 'join' with userId after login)
-  socket.on('join', (userId) => {
-    socket.join(userId);
-  });
-  // Mark as read and delete notification
-  socket.on('readNotification', async ({ notificationId, userId }) => {
-    await Notification.findByIdAndUpdate(notificationId, { isRead: true });
-    await Notification.findByIdAndDelete(notificationId);
-    io.to(userId).emit('notificationDeleted', notificationId);
-  });
-});
-
-// Auto-delete notifications after 2 days if not viewed
-setInterval(async () => {
-  const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
-  const oldNotifications = await Notification.find({ isRead: false, createdAt: { $lt: twoDaysAgo } });
-  for (const notif of oldNotifications) {
-    await Notification.findByIdAndDelete(notif._id);
-    io.to(notif.userId.toString()).emit('notificationDeleted', notif._id.toString());
-  }
-}, 60 * 60 * 1000); // Run every hour
-
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -100,6 +59,6 @@ app.get("/", (req, res) => {
   res.send("API is Working");
 });
 
-const PORT = process.env.PORT || 5001; // Changed to 5001 to avoid conflicts
-// Use server.listen instead of app.listen to enable Socket.IO
-server.listen(PORT, () => console.log(`Server running on port ${PORT} with Socket.IO enabled`));
+const PORT = process.env.PORT || 5001;
+// Use app.listen now that Socket.IO has been removed
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -3,3 +3,11 @@
 /server/.env
 /server/.env.local
 ChatBot/.env
+ChatBot/.venv
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+ 

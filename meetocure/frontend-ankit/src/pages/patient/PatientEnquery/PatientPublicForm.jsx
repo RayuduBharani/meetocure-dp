@@ -16,8 +16,8 @@ export default function PatientEnquiryForm({ open, setOpen,handleCategoryClick }
   const [formData, setFormData] = useState({
     symptoms: "",
     started: "",
-    advice: "",
-    expectations: "",
+   medications: "", // replaces "advice"
+  goal: "",  
   });
 
 const symptomCategoryMap = {
@@ -38,15 +38,15 @@ const symptomCategoryMap = {
 const placeholders = {
   symptoms: "e.g. chest pain, persistent cough, high fever",
   started: "e.g. started 3 days ago / since last week",
-  advice: "e.g. took paracetamol, visited clinic, used inhaler",
-  expectations: "e.g. want diagnosis, specialist consult, lab tests",
+ medications: "e.g. paracetamol, inhaler, home remedies",
+  goal: "e.g. get a diagnosis, consult a specialist, lab tests",
 };
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
 const handleSubmit = () => {
-  if (!formData.symptoms || !formData.started || !formData.advice || !formData.expectations) {
+  if (!formData.symptoms || !formData.started || !formData.medications || !formData.goal) {
     toast.error("Please fill all fields", { duration: 1500 });
     return;
   }
@@ -88,7 +88,7 @@ const handleSubmit = () => {
     </AlertDialogHeader>
 
     <div className="grid gap-4 sm:gap-5 py-4 px-4 sm:px-6">
-            {["symptoms", "started", "advice", "expectations"].map((field, idx) => (
+            {["symptoms", "started", "medications", "goal"].map((field, idx) => (
         <div key={idx}>
           <label className="block text-left text-sm sm:text-base font-semibold mb-2 text-[#004B5C]">
             {idx + 1}. {field.charAt(0).toUpperCase() + field.slice(1)}?
@@ -117,8 +117,6 @@ const handleSubmit = () => {
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>
-
-
     </>
   );
 }
