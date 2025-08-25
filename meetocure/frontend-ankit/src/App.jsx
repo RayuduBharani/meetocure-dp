@@ -52,6 +52,7 @@ import PatientLogin from "./pages/patient/PatientLogin";
 import DoctorVerify from "./pages/doctor/DoctorVerify";
 import { DoctorVerification } from "./pages/doctor/DoctorVerification";
 import PatientPublicForm from "./pages/patient/PatientEnquery/PatientPublicForm";
+import PatientSos from "./pages/patient/SOS/PatientSos";
 
 
 function App() {
@@ -88,6 +89,7 @@ function App() {
       <Route path="/patient/settings" element={<PatientSettings />} />
       <Route path="/patient/notifications" element={<Notifications />} />
       <Route path="/patient/calendar" element={<PatientAppointView />} />
+      <Route path="/patient//emergency-contact" element={<PatientSos />} />  
       <Route path="/patient/help" element={<Help />} />
       <Route path="/patient/terms" element={<Terms />} />
       <Route path="/location" element={<Location />} />

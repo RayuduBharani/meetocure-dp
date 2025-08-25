@@ -6,7 +6,7 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 // Enable CORS only for your frontend domain
-app.use(
+app.use(  
   cors({
     origin: [process.env.FRONTEND_URL, process.env.FRONTEND_URL_2, "http://localhost:5173", "http://localhost:3000"].filter(Boolean),
     credentials: true,

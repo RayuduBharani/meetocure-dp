@@ -11,10 +11,7 @@ const ChooseRoleScreen = () => {
   };
 
   const handleEmergencyCall = () => {
-    if (typeof window !== "undefined") {
-      window.location.href = "tel:911"; // replace with local emergency number
-    }
-    setShowSOSModal(false);
+   navigate("/patient//emergency-contact");
   };
 
   return (
