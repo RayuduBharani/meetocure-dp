@@ -25,11 +25,14 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: "*", // Allow all origins temporarily for testing
     methods: ["GET", "POST"],
-    credentials: true,
+    credentials: false,
+    allowedHeaders: ["*"]
   },
-  transports: ['websocket', 'polling'],
+  transports: ['polling', 'websocket'],
+  pingTimeout: 60000,
+  pingInterval: 25000,
 });
 
 app.set('io', io); // Make io accessible in routes
@@ -97,6 +100,6 @@ app.get("/", (req, res) => {
   res.send("API is Working");
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001; // Changed to 5001 to avoid conflicts
 // Use server.listen instead of app.listen to enable Socket.IO
 server.listen(PORT, () => console.log(`Server running on port ${PORT} with Socket.IO enabled`));

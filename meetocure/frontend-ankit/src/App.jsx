@@ -57,9 +57,11 @@ import SendNotification from './components/SendNotification.jsx';
 import NotificationsList from './components/NotificationList.jsx';
 const userId = 'PATIENT_OBJECT_ID';
 
+import { GoogleMapsProvider } from './contexts/GoogleMapsContext';
+
 function App() {
   return (
-    <>
+    <GoogleMapsProvider>
       <Routes>
         {/* Common Routes */}
         <Route path="/" element={<SplashScreen />} />
@@ -142,7 +144,7 @@ function App() {
 
       </Routes>
       <Toaster position="top-right" />
-    </>
+    </GoogleMapsProvider>
   );
 }
 

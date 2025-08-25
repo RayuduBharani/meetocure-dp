@@ -1,16 +1,17 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:5000';
+const SOCKET_URL = 'http://localhost:5001'; // Updated to match new backend port
 
 export const socket = io(SOCKET_URL, {
-    transports: ['websocket', 'polling'], // Try both WebSocket and polling
-    withCredentials: true,
+    transports: ['polling', 'websocket'], // Try polling first
+    withCredentials: false, // Match server configuration
     reconnection: true,
-    reconnectionAttempts: 5,
+    reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
-    timeout: 10000, // Increase timeout
+    timeout: 20000,
     autoConnect: true,
     forceNew: true,
+    path: '/socket.io'
 });
 
 socket.on('connect', () => {
