@@ -29,9 +29,9 @@ const normalizePhone = (p) => {
 
 // Send OTP
 exports.sendOtp = async (req, res) => {
-  console.log("hello");   // ✅ Check if this prints when API is hit
+  console.log("hello");   //  Check if this prints when API is hit
   try {
-    const phone = normalizePhone(req.body.phone);  // ⚠️ If this throws, it will go to catch
+    const phone = normalizePhone(req.body.phone);  //  If this throws, it will go to catch
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     const codeHash = await bcrypt.hash(otp, 10);
@@ -43,14 +43,14 @@ exports.sendOtp = async (req, res) => {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    // await client.messages.create({
-    //   body: `Your verification code is From MeetOCure: ${otp}. It expires in 2 minutes.`,
-    //   messagingServiceSid: TWILIO_MESSAGING_SERVICE_SID,
-    //   to: phone, 
-    // });
-    console.log(`OTP for ${phone}: ${otp}`);  // ✅ Log OTP for testing
+    await client.messages.create({
+      body: `Your verification code is From MeetOCure: ${otp}. It expires in 2 minutes.`,
+      messagingServiceSid: TWILIO_MESSAGING_SERVICE_SID,
+      to: phone, 
+    });
+    // console.log(`OTP for ${phone}: ${otp}`);   Log OTP for testing
 
-    return res.json({ success: true, message: "OTP sent" });  // ✅ should always return
+    return res.json({ success: true, message: "OTP sent" });  // should always return
   } catch (err) {
     console.error("Error in sendOtp:", err);  // 👈 log actual error
     return res.status(400).json({ success: false, message: err.message });

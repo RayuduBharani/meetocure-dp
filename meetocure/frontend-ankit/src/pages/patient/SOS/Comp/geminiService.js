@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
-console.log(API_KEY);
+
 if (!API_KEY) {
   throw new Error("VITE_GEMINI_API_KEY is not set. Add it to .env.local and restart the dev server.");
 }

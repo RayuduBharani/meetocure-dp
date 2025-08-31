@@ -91,7 +91,7 @@ const PatientDetails = () => {
         patientInfo: { name, phone, age, gender },
       };
 
-      await axios.post(`http://localhost:5000/api/appointments`, payload, {
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/appointments`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",

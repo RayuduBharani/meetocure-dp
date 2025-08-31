@@ -25,7 +25,7 @@ const chatWithFlaskAI = async (req, res) => {
     });
 
     // send to Flask AI
-    const flaskBase = "http://127.0.0.1:8000"; // update if needed
+    const flaskBase = process.env.CHATBOT_URL; // update if needed
     const flaskResponse = await axios.post(
       `${flaskBase}/assistance`,
       { text: message }   // must match FastAPI schema

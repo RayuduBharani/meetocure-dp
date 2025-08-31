@@ -110,7 +110,7 @@ const ChatInterface = ({ patientId, activeConversation, onSaveConversation }) =>
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
-  const API_BASE = "http://localhost:5000";
+  const API_BASE = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
     setMessages(activeConversation?.messages || initialMessages);
@@ -261,7 +261,7 @@ const ChatPage = () => {
   const [histories, setHistories] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
   const [newChatKey, setNewChatKey] = useState(Date.now());
-  const SERVER_BASE = "http://localhost:5000";
+  const SERVER_BASE =import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
     if (!patientId) return;

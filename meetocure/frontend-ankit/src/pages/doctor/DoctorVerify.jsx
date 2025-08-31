@@ -35,7 +35,7 @@ const DoctorVerify = () => {
       }
 
       const res = await axios.post(
-        "http://localhost:5000/api/auth/doctor/send-otp",
+        `${import.meta.env.VITE_BACKEND_URL}/api/auth/doctor/send-otp`,
         { phone }
       );
 
@@ -59,7 +59,7 @@ const DoctorVerify = () => {
         phone = "+91" + phone;
       }
 
-      await axios.post("http://localhost:5000/api/auth/doctor/verify-otp", {
+      await axios.post("${import.meta.env.VITE_BACKEND_URL}/api/auth/doctor/verify-otp", {
         phone,
         otp,
       });
@@ -81,7 +81,7 @@ const DoctorVerify = () => {
     const loadingToast = toast.loading("Signing in...");
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/auth/doctor/doctor-auth",
+        `${import.meta.env.VITE_BACKEND_URL}/api/auth/doctor/doctor-auth`,
         formData
       );
 

@@ -58,7 +58,7 @@ export const DoctorVerification = () => {
 
     try {
       const res = await axios.post(
-        `http://localhost:5000/api/doctor/verify-doctor/?doctorId=${doctorId}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/doctor/verify-doctor/?doctorId=${doctorId}`,
         formData
       );
 

@@ -12,7 +12,6 @@ const PatientLogin = () => {
   const [timer, setTimer] = useState(60);
   const [loading, setLoading] = useState(false);
   const otpRefs = useRef([]);
-
   useEffect(() => {
     let id;
     if (otpSent && timer > 0) {
@@ -29,17 +28,13 @@ const PatientLogin = () => {
       toast.error("Please enter a valid 10-digit mobile number");
       return;
     }
-
     try {
-      setLoading(true);
       toast.loading("Sending OTP...", { id: "otp" });
-
       const res = await axios.post(
-        "http://localhost:5000/api/auth/patient/send-otp",
+        `${import.meta.env.VITE_BACKEND_URL}/api/auth/patient/send-otp`,
         { phone }
       );
 
-      console.log("Send OTP Response:", res.data);
       toast.success("OTP Sent!", { id: "otp" });
 
       setOtpSent(true);
@@ -69,7 +64,7 @@ const PatientLogin = () => {
       toast.loading("Verifying OTP...", { id: "verify" });
 
       const res = await axios.post(
-        "http://localhost:5000/api/auth/patient/verify-otp",
+        `${import.meta.env.VITE_BACKEND_URL}/api/auth/patient/verify-otp`,
         { phone, otp }
       );
 
