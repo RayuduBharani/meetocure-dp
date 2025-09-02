@@ -8,8 +8,8 @@ import HeroCarousel from "../../components/HeroBanners";
 import SidebarNavPatient from "../../components/SidebarNavPatient";
 import FloatingContactButton from "../../components/FloatingContactButton";
 import CardList from './CardList';
-import { allDoctorsData } from './doctorspages/DoctorsData';
 import { allHospitalsData } from './hospitalpages/HospitalsData';
+import DoctorCardList from "./DoctorCard";
 
 
 
@@ -19,7 +19,7 @@ const PatientDashboard = () => {
   const routerLocation = useRouterLocation();
 
   const [city, setCity] = useState("Vijayawada");
-  const [doctors, setDoctors] = useState([]);
+  const [doctors, setDoctors] = useState([]);  // ✅ doctors from backend
   const [hospitals, setHospitals] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [loadingHospitals, setLoadingHospitals] = useState(false);
@@ -28,6 +28,7 @@ const PatientDashboard = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [filteredDoctors, setFilteredDoctors] = useState([]);
   const [filteredHospitals, setFilteredHospitals] = useState([]);
+
 
   useEffect(() => {
     const storedCity = localStorage.getItem("selectedCity");
@@ -46,30 +47,40 @@ const PatientDashboard = () => {
     'vaccination': ['Vaccination', 'Immunization', 'Vaccine']
   };
 
-  const handleCategoryClick = (category) => {
+ const handleCategoryClick = async (category) => {
     setSelectedCategory(category);
-    // Get the search terms for this category
+    setLoadingDoctors(true);
+    setErrorDoctors(null);
+    try {
+      // Use backend to fetch doctors matching the category
+      const resp = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/doctor`, {
+        params: { category },
+      });
+      const mappedDoctors = resp.data.map((doc) => ({
+        id: doc._id,
+        fullName: doc.fullName,
+        primarySpecialization: doc.primarySpecialization || doc.specialization,
+        category: doc.category,
+        profileImage: doc.profileImage || "/assets/default-doctor.png",
+      }));
+      setFilteredDoctors(mappedDoctors);
+    } catch (err) {
+      setErrorDoctors(err.response?.data?.message || err.message);
+      setFilteredDoctors([]);
+    } finally {
+      setLoadingDoctors(false);
+    }
+
+    // hospitals filtering stays the same (static data)
     const searchTerms = categoryMapping[category.toLowerCase()] || [category];
-
-    // Filter doctors from the static data
-    const doctors = allDoctorsData.filter(doctor =>
-      searchTerms.some(term =>
-        (doctor.specialty || '').toLowerCase().includes(term.toLowerCase()) ||
-        (doctor.type || '').toLowerCase().includes(term.toLowerCase())
-      )
-    );
-
-    // Filter hospitals from the static data
-    const hospitals = allHospitalsData.filter(hospital =>
+    const hospitalsFiltered = allHospitalsData.filter(hospital =>
       searchTerms.some(term =>
         (hospital.specialty || '').toLowerCase().includes(term.toLowerCase()) ||
         (hospital.name || '').toLowerCase().includes(term.toLowerCase()) ||
         (hospital.type || '').toLowerCase().includes(term.toLowerCase())
       )
     );
-    console.log(doctors);
-    setFilteredDoctors(doctors);
-    setFilteredHospitals(hospitals);
+    setFilteredHospitals(hospitalsFiltered);
   };
 
   const handleBackToDashboard = () => {
@@ -92,9 +103,9 @@ const PatientDashboard = () => {
     return titles[category.toLowerCase()] || category;
   };
 
-  useEffect(() => {
-    const token = localStorage.getItem("token"); // your auth token key
-
+ useEffect(() => {
+    const token = localStorage.getItem("token");
+  console.log("Fetching doctors with token:", token); // Debug log
     if (!token) {
       console.warn("No auth token found. Cannot fetch protected routes.");
       return;
@@ -102,29 +113,24 @@ const PatientDashboard = () => {
 
     setLoadingDoctors(true);
     axios
-      .get(`${API_BASE_URL}/api/doctor`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        setDoctors(Array.isArray(res.data) ? res.data : []);
-        setErrorDoctors(null);
-      })
-      .catch((err) => {
-        setErrorDoctors(err.response?.data?.message || err.message);
-      })
-      .finally(() => setLoadingDoctors(false));
+  .get(`${import.meta.env.VITE_BACKEND_URL}/api/doctor`)
+  .then((res) => {
+    const mappedDoctors = res.data.map((doc) => ({
+      id: doc._id,
+      fullName: doc.fullName,
+      primarySpecialization: doc.primarySpecialization || doc.specialization,
+      category: doc.category,
+      profileImage: doc.profileImage || "/assets/default-doctor.png", // fallback if no photo
+    }));
+    setDoctors(mappedDoctors);
+    console.log("Mapped doctors:", mappedDoctors);
+    setErrorDoctors(null);
+  })
+  .catch((err) => {
+    setErrorDoctors(err.response?.data?.message || err.message);
+  })
+  .finally(() => setLoadingDoctors(false));
 
-    setLoadingHospitals(true);
-    axios
-      .get(`${API_BASE_URL}/api/hospitals`)
-      .then((res) => {
-        setHospitals(Array.isArray(res.data) ? res.data : []);
-        setErrorHospitals(null);
-      })
-      .catch((err) => {
-        setErrorHospitals(err.response?.data?.message || err.message);
-      })
-      .finally(() => setLoadingHospitals(false));
   }, []);
 
   return (
@@ -204,7 +210,7 @@ const PatientDashboard = () => {
             </div>
 
             {/* Categories */}
-            <SectionHeader title="Categories" seeAllLink="/doctorspages/Cards-data.jsx" />
+            <SectionHeader title="Categories" seeAllLink="/doctorspages/Cards-data" />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-8 mb-16">
               {categories.map((item) => (
                 <div
@@ -255,7 +261,8 @@ const PatientDashboard = () => {
                   </>
                 ) : (
                   <>
-                    <CardList title="Nearby Doctors" data={allDoctorsData} type="doctor" />
+                    {/* <CardList title="Nearby Doctors" data={doctors} type="doctor" /> */}
+                    <DoctorCardList title="Nearby Doctors" doctors={doctors} type="doctor" />
                     <CardList title="Nearby Hospitals" data={allHospitalsData} type="hospital" />
                   </>
                 )}
@@ -266,6 +273,20 @@ const PatientDashboard = () => {
           /* Category Results */
           <div className="p-4 sm:p-6 lg:p-8">
             <div className="max-w-7xl mx-auto">
+              {/* Info bar: loading, error, and counts */}
+              {loadingDoctors ? (
+                <div className="text-center py-4">Loading doctors...</div>
+              ) : errorDoctors ? (
+                <div className="text-center text-red-500 py-4">{errorDoctors}</div>
+              ) : (
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold text-[#0A4D68]">{getCategoryTitle(selectedCategory)}</h2>
+                  <div className="text-sm text-gray-600">
+                    {filteredDoctors.length} doctor{filteredDoctors.length !== 1 ? 's' : ''} • {filteredHospitals.length} hospital{filteredHospitals.length !== 1 ? 's' : ''}
+                  </div>
+                </div>
+              )}
+
               {filteredDoctors.length > 0 && (
                 <CardList
                   title={`${getCategoryTitle(selectedCategory)} Doctors`}
@@ -282,7 +303,7 @@ const PatientDashboard = () => {
                 />
               )}
 
-              {filteredDoctors.length === 0 && filteredHospitals.length === 0 && (
+              {filteredDoctors.length === 0 && filteredHospitals.length === 0 && !loadingDoctors && !errorDoctors && (
                 <div className="text-center py-16">
                   <div className="text-gray-500 text-lg mb-4">
                     No {getCategoryTitle(selectedCategory).toLowerCase()} providers found in {city}
@@ -316,33 +337,8 @@ const SectionHeader = ({ title, seeAllLink }) => (
 </div>
 
 );
-const DoctorCard = ({ name, specialty, location, image }) => (
-  <div className="bg-white rounded-xl shadow p-5 hover:shadow-md transition">
-    <div className="w-full h-44 overflow-hidden rounded-lg mb-4">
-      <img
-        src={image}
-        alt={name}
-        className="w-full h-full object-cover object-top"
-      />
-    </div>
-    <h3 className="text-lg font-semibold text-[#1F2A37]">{name}</h3>
-    <p className="text-sm text-gray-500">{specialty}</p>
-    <p className="text-sm text-gray-400">{location}</p>
-  </div>
-);
-const HospitalCard = ({ name, address, image }) => (
-  <div className="bg-white rounded-xl shadow p-5 hover:shadow-md transition">
-    <div className="w-full h-40 overflow-hidden rounded-lg mb-4">
-      <img
-        src={image}
-        alt={name}
-        className="w-full h-full object-cover object-top"
-      />
-    </div>
-    <h3 className="text-lg font-semibold text-[#1F2A37]">{name}</h3>
-    <p className="text-sm text-gray-500">{address}</p>
-  </div>
-);
+
+
 const categories = [
   { label: "Dentistry", icon: "dentist.png" },
   { label: "Cardiology", icon: "cardiology.png" },

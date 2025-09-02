@@ -2,12 +2,16 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../../../lib/config";
 import { FaArrowLeft, FaUser, FaPhoneAlt, FaVenusMars } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import TopIcons from "../../../components/PatientTopIcons";
 import toast from "react-hot-toast";
 
 const PatientDetails = () => {
   const navigate = useNavigate();
+   const location = useLocation();
+  // Extract passed props
+  const { date, time, doctorId } = location.state || {};
+  console.log("Received props:", { date, time, doctorId });
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -17,14 +21,11 @@ const PatientDetails = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const date = localStorage.getItem("appointmentDate");
-    const time = localStorage.getItem("appointmentTime");
-
-    if (!date || !time) {
-      toast.error("Please select appointment date and time first.");
+    if(!date || !time || !doctorId) {
+      toast.error("Missing appointment details. Please select again.");
       navigate("/patient/appointments/datetime");
     }
-  }, [navigate]);
+  },[location.state, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -40,97 +41,82 @@ const PatientDetails = () => {
 
   const validatePhone = (phone) => /^\d{10}$/.test(phone);
 
-  const handleContinue = async () => {
-    const { name, phone, age, gender } = formData;
+const handleContinue = async () => {
+  const { name, phone, age, gender } = formData;
 
-    if (!name || !phone || !age || !gender) {
-      toast.error("Please fill all required fields");
+  if (!name || !phone || !age || !gender) {
+    toast.error("Please fill all required fields");
+    return;
+  }
+
+  if (!validatePhone(phone)) {
+    toast.error("Please enter a valid 10-digit mobile number.");
+    return;
+  }
+
+  if (age <= 0 || age > 120) {
+    toast.error("Please enter a valid age.");
+    return;
+  }
+
+  if (!doctorId || !date || !time) {
+    toast.error("Appointment details missing. Please try again.");
+    navigate("/patient/appointments/datetime");
+    return;
+  }
+
+  setLoading(true);
+  const loadingToast = toast.loading("Booking appointment...");
+
+  try {
+    const token = localStorage.getItem("token");
+
+    // ✅ Parse stored patient object
+    const storedPatient = localStorage.getItem("user");
+    const patientId = storedPatient ? JSON.parse(storedPatient)._id : null;
+
+    if (!patientId) {
+      toast.error("Patient not found. Please log in again.");
+      setLoading(false);
+      navigate("/dual-patient");
       return;
     }
 
-    if (!validatePhone(phone)) {
-      toast.error("Please enter a valid 10-digit mobile number.");
-      return;
-    }
-
-    if (age <= 0 || age > 120) {
-      toast.error("Please enter a valid age.");
-      return;
-    }
-
-    const date = localStorage.getItem("appointmentDate");
-    const time = localStorage.getItem("appointmentTime");
-    const urlParams = new URLSearchParams(window.location.search);
-    const doctorIdParam = urlParams.get("doctorId");
-    const doctorIdStored = localStorage.getItem("selectedDoctorId");
-    const doctorId = doctorIdParam || doctorIdStored;
-
-    if (!doctorId) {
-      toast.error("No doctor selected. Please choose a doctor before booking.");
-      navigate("/patient-dashboard");
-      return;
-    }
-
-    if (!date || !time) {
-      toast.error("Appointment date/time missing. Please select date and time again.");
-      navigate("/patient/appointments/datetime");
-      return;
-    }
-
-    setLoading(true);
-    const loadingToast = toast.loading("Booking appointment...");
-
-    try {
-      const token = localStorage.getItem("token");
-
-      const payload = {
-        doctorId,
-        date,
-        time,
-        reason: "Routine Checkup",
-        patientInfo: { name, phone, age, gender },
-      };
-
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/appointments`, payload, {
+    const payload = {
+      patient: patientId,        // ✅ correct _id
+      doctor: doctorId,
+      patientInfo: { name, phone, age, gender: gender.toLowerCase() }, // 👈 lowercase to match schema
+      date,
+      time,
+      reason: "Routine Checkup",
+    };
+    console.log("Booking payload:", payload);
+    await axios.post(
+      `${import.meta.env.VITE_BACKEND_URL}/api/appointments`,
+      payload,
+      {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-      });
+      }
+    );
 
-      toast.dismiss(loadingToast);
-      toast.success("Appointment booked successfully!");
+    toast.dismiss(loadingToast);
+    toast.success("Appointment booked in progress!");
+    window.location.href = "https://rzp.io/rzp/8l24wgPo";
+    setLoading(false);
+    // navigate("/patient/appointments/payment");
+  } catch (error) {
+    setLoading(false);
+    toast.dismiss(loadingToast);
+    console.error("Booking failed", error);
+    toast.error(error.response?.data?.message || "Failed to book appointment");
+  }
+};
 
-      // Optional CTA → link to calendar
-      toast(
-        (t) => (
-          <div>
-            <span className="font-medium">Appointment booked!</span>
-            <button
-              className="ml-3 px-3 py-1 bg-[#0A4D68] text-white rounded-md text-sm"
-              onClick={() => {
-                toast.dismiss(t.id);
-                window.location.href = "/patient/calendar";
-              }}
-            >
-              View Appointments
-            </button>
-          </div>
-        ),
-        { duration: 5000 }
-      );
 
-      localStorage.removeItem("appointmentDate");
-      localStorage.removeItem("appointmentTime");
-      setLoading(false);
-      navigate("/patient/appointments/payment");
-    } catch (error) {
-      setLoading(false);
-      toast.dismiss(loadingToast);
-      console.error("Booking failed", error);
-      toast.error(error.response?.data?.message || "Failed to book appointment");
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-white px-6 py-6 lg:px-20 lg:py-10">

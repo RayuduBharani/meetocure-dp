@@ -35,16 +35,13 @@ const hospitalSchema = new mongoose.Schema(
     {
         type: String,
     },
-
     category:
     {
         type: String,
         enum: ['Hospital', "Clinic", "Specialized Care"],
         required: true,
     },
-
     departments: [String],
-
     rating:
     {
         type: Number,

@@ -4,7 +4,7 @@ const availabilitySchema = new mongoose.Schema(
   {
     doctor: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "DoctorVerification",
       required: true,
       unique: true
     },

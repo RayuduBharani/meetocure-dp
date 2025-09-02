@@ -33,7 +33,6 @@ import Terms from "./pages/patient/profile/Terms";
 import DateTime from "./pages/patient/Appointmentpage/DateTime";
 import PatientDetails from "./pages/patient/Appointmentpage/PatientDetails";
 import Payment from "./pages/patient/Appointmentpage/Payment";
-import AppointmentContextProvider from "./pages/patient/Appointmentpage/AppointmentContext";
 import ChatPage from "./pages/patient/contactpages/Chatpage";
 import ContactUS from "./pages/patient/contactpages/ContactUs";
 import HospitalsPage from "./pages/patient/hospitalpages/HospitalDetailsPage-hos";
@@ -58,9 +57,12 @@ import NotificationsList from './components/NotificationList.jsx';
 const userId = 'PATIENT_OBJECT_ID';
 
 import { GoogleMapsProvider } from './contexts/GoogleMapsContext';
+import { AuthProvider } from "./contexts/AuthContext.jsx";
+import AppointmentProvider from "./contexts/AppointmentContext.jsx";
 
 function App() {
   return (
+    // <AuthProvider>
     <GoogleMapsProvider>
       <Routes>
         {/* Common Routes */}
@@ -70,6 +72,7 @@ function App() {
         <Route path="/dual-doctor" element={<DoctorVerify />} />
 
         {/* Doctor Routes */}
+        {/* <Route element={<PrivateRoute allowedRoles={['doctor']} />}> */}
         <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
         <Route path="/doctor/appointments" element={<DoctorAppointmentsPage />} />
         <Route path="/doctor/patient/:id" element={<DoctorPatientDetailsPage />} />
@@ -85,8 +88,9 @@ function App() {
         <Route path="/doctor/help" element={<HelpSupport />} />
         <Route path="/doctor/terms" element={<TermsConditions />} />
         <Route path="/doctor-verification" element={<DoctorVerification />} />
-
+        {/* </Route> */}
         {/* Patient Routes */}
+        {/* <Route element={<PrivateRoute allowedRoles={['patient']} />}> */}
         <Route path="/patient-dashboard" element={<PatientDashboard />} />
         <Route path="/patient/profile" element={<PatientProfilePage />} />
         <Route path="/patient/profile/edit" element={<PatientEditProfile />} />
@@ -103,24 +107,20 @@ function App() {
         <Route path="/patient/wallet" element={<WalletPage />} />
         <Route path="/doctorspages/Cards-data" element={<CardsData />} />
         <Route path="/hospitalpages/Cards-data" element={<HospitalCardsData />} />
-        <Route path="/details/:id" element={<DetailPage />} />
+        <Route path="/details/:id" element={<DetailsPage />}/>
         <Route path="/details/:type/:id" element={<DetailsPage />} />
         <Route path="/hospital/:hospitalId/doctors" element={<HospitalDoctorsPage />} />
         <Route path="/patient/appointments/Query" element={<PatientPublicForm />} />
-
+        {/* </Route> */}
         {/* Notifications Route */}
-        <Route path="/notifications" element={
-          <>
-            <SendNotification userId={userId} />
-            <NotificationsList userId={userId} />
-          </>
-        } />
+        
+
 
         {/* Patient Appointment Flow (Wrapped in Context) */}
         <Route
           path="/patient/appointments/*"
           element={
-            <AppointmentContextProvider>
+            <AppointmentProvider>
               <NotificationProvider>
                 <Routes>
                   <Route path="" element={<DateTime />} />
@@ -135,7 +135,7 @@ function App() {
 
                 </Routes>
               </NotificationProvider>
-            </AppointmentContextProvider>
+            </AppointmentProvider>
           }
         />
 
@@ -145,6 +145,7 @@ function App() {
       </Routes>
       <Toaster position="top-right" />
     </GoogleMapsProvider>
+    // {/* </AuthProvider> */}
   );
 }
 

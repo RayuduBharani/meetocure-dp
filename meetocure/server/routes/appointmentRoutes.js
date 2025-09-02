@@ -9,8 +9,9 @@ const {
   getPatientAppointments,
 } = require("../controllers/appointmentController");
 
+
 // Patient books appointment
-router.post("/", protect(["patient"]), bookAppointment);
+router.post("/", bookAppointment);
 
 //Patient views their own appointments 
 router.get("/my", protect(["patient"]), getPatientAppointments);

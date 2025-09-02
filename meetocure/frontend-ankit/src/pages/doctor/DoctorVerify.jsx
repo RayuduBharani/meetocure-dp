@@ -59,7 +59,7 @@ const DoctorVerify = () => {
         phone = "+91" + phone;
       }
 
-      await axios.post("${import.meta.env.VITE_BACKEND_URL}/api/auth/doctor/verify-otp", {
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/doctor/verify-otp`, {
         phone,
         otp,
       });
@@ -85,6 +85,7 @@ const DoctorVerify = () => {
         formData
       );
 
+      console.log(res);
       if (res.data.registrationStatus === "pending_verification") {
         toast.dismiss(loadingToast);
         navigate(`/doctor-verification/?doctorId=${res.data.doctorId}`);

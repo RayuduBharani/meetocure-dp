@@ -40,11 +40,11 @@ const CardList = ({ title, data, type, seeAllLink }) => {
                         return (
                             <Link to={`/details/${type}/${item.id}`} key={item.id}>
                                 <Card
-                                    image={item.imageUrl}
-                                    name={item.name}
-                                    specialty={item.specialty || item.type}
+                                    image={item.profileImage}
+                                    name={item.fullName}
+                                    specialty={item.category || item.type}
                                     location={item.location}
-                                    rating={item.rating}
+                                    rating={3}
                                 />
                             </Link>
                         );

@@ -1,3 +1,4 @@
+// ...existing code...
 const mongoose = require("mongoose");
 
 const DoctorVerificationSchema = new mongoose.Schema({
@@ -10,6 +11,21 @@ const DoctorVerificationSchema = new mongoose.Schema({
   yearOfRegistration: String,
   primarySpecialization: String,
   additionalSpecializations: String,
+  category: {
+    type: String,
+    enum: [
+      'Cardiology',
+      'Dentistry',
+      'Pulmonology',
+      'Neurology',
+      'Gastroenterology',
+      'Laboratory',
+      'Vaccination',
+      'General',
+      'Other'
+    ],
+    default: 'General'
+  },
   qualifications: [{
     degree: String,
     universityCollege: String,
@@ -17,7 +33,7 @@ const DoctorVerificationSchema = new mongoose.Schema({
   }],
   experienceYears: String,
   clinicHospitalAffiliations: [{
-    name: String,
+    name: String, 
     city: String,
     state: String,
     startDate: String,
@@ -30,7 +46,12 @@ const DoctorVerificationSchema = new mongoose.Schema({
   medicalCouncilCertificateUrl: String,
   qualificationCertificatesUrls: [String],
   digitalSignatureCertificateId: String,
+  profileImage: {
+    type: String,
+   required:true
+  },
   verified: { type: Boolean, default: false }
 });
 
 module.exports = mongoose.model("DoctorVerification", DoctorVerificationSchema);
+//

@@ -74,7 +74,7 @@ const PatientLogin = () => {
       const { token, patient } = res.data;
       if (token) localStorage.setItem("token", token);
       if (patient) {
-        localStorage.setItem("patient", JSON.stringify(patient));
+        localStorage.setItem("user", JSON.stringify(patient));
         // store patientId for chat page compatibility (handle different backend shapes)
         const pid = patient._id || patient.id || patient.patientId || null;
         if (pid) {

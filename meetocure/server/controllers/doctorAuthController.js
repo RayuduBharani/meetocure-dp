@@ -96,7 +96,7 @@ const doctorAuth = async (req, res) => {
     if (existingPatient) {
       return res.status(400).json({ message: "This phone is already registered as a patient" });
     }
-
+   
     let doctor = await Doctor.findOne({ email });
 
     if (!doctor) {
@@ -110,7 +110,6 @@ const doctorAuth = async (req, res) => {
         mobileNumber,
         registrationStatus: "pending_verification",
       });
-
       // Emit socket event for new doctor registration
       try {
         const io = req.app.get('io');
@@ -148,12 +147,15 @@ const doctorAuth = async (req, res) => {
         });
       }
 
-      const token = jwt.sign({ id: doctor._id }, JWT_SECRET, { expiresIn: "1d" });
+      const token = jwt.sign({ id: doctor._id, role: "doctor" }, JWT_SECRET, { expiresIn: "1d" });
       return res.json({
         message: "Login successful",
         token,
+        doctor:{
         doctorId: doctor._id,
         registrationStatus: doctor.registrationStatus,
+        role: "doctor",
+        }
       });
     }
   } catch (err) {

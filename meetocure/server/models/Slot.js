@@ -14,7 +14,6 @@ const slotSchema = new mongoose.Schema (
         type: String,
         required: true
     },
-
     availableSlots:
     [
         {

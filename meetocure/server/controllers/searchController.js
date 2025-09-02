@@ -49,3 +49,4 @@ const searchAll = async (req, res) => {
 };
 
 module.exports = { searchAll };
+

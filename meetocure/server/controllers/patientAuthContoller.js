@@ -48,7 +48,7 @@ exports.sendOtp = async (req, res) => {
       messagingServiceSid: TWILIO_MESSAGING_SERVICE_SID,
       to: phone, 
     });
-    // console.log(`OTP for ${phone}: ${otp}`);   Log OTP for testing
+    console.log(`OTP for ${phone}: ${otp}`); //  Log OTP for testing
 
     return res.json({ success: true, message: "OTP sent" });  // should always return
   } catch (err) {
@@ -103,6 +103,7 @@ exports.verifyOtp = async (req, res) => {
         _id: patient._id,
         phone: patient.phone,
         notifications: patient.notifications,
+        role:"patient",
       },
     });
   } catch (err) {

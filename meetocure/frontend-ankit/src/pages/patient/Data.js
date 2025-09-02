@@ -9,7 +9,7 @@ export const doctorsData = [
         rating: 4.8,
         image: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?q=80&w=600&auto=format&fit=crop',
         patients: 1200,
-        experience: '15 years',
+        experience: '15 years', 
         reviews: 89,
         contact: '+91 9876543001',
         about: 'Dr. Sarah Khan is a board-certified cardiologist with over 15 years of experience in treating cardiovascular diseases. She specializes in interventional cardiology and has performed over 500 successful procedures.',

@@ -20,6 +20,7 @@ const Payment = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   const handleContinue = () => {
+    toast.success("Appointment booked Sucessfully"); // --- IGNORE ---
     if (selectedOption) {
       setShowConfirmation(true);
     } else {

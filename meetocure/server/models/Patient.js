@@ -11,7 +11,7 @@ const notificationSchema = new mongoose.Schema(
 
 const patientSchema = new mongoose.Schema(
   {
-    phone: { type: String, required: true, unique: true }, // E.164 or 10-digit (decide one format)
+    phone: { type: String, required: true, unique: true }, 
     notifications: { type: [notificationSchema], default: [] },
   },
   { timestamps: true }

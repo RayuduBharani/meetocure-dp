@@ -1,8 +1,9 @@
 // ⬅ UNCHANGED imports and setup
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import TopIcons from "../../../components/PatientTopIcons";
+import toast from "react-hot-toast";
 
 const timeSlots = [
   "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
@@ -18,9 +19,19 @@ const monthNames = [
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const DateTime = () => {
+  
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const doctorId = searchParams.get("doctorId");
   const today = new Date();
 
+
+  useEffect(() => {
+    if (!doctorId) {
+      toast.error("Doctor not specified. Please select a doctor.");
+      navigate("/patient-dashboard");
+    }
+  }, [doctorId, navigate]);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
@@ -70,13 +81,18 @@ const DateTime = () => {
     setSelectedDate(formatted);
   };
 
-  const handleContinue = () => {
-    if (selectedDate && selectedTime) {
-      localStorage.setItem("appointmentDate", selectedDate);
-      localStorage.setItem("appointmentTime", selectedTime);
-      navigate("/patient/appointments/patient-detail");
-    }
-  };
+const handleContinue = () => {
+  if (selectedDate && selectedTime) {
+    navigate("/patient/appointments/patient-detail", {
+      state: {
+        date: selectedDate,
+        time: selectedTime,
+        doctorId // 👈 pass the doctor ID here
+      },
+    });
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-white px-4 py-6 lg:px-32 lg:py-10">
