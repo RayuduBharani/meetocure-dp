@@ -1,11 +1,10 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
-const doctor=require("../models/DoctorShema");
 const DoctorVerificationShema = require("../models/DoctorVerificationShema");
+const Doctor = require("../models/DoctorShema");
+const Patient = require("../models/Patient");
+
 const protect = (roles = []) => {
-  console.log("Roles in protect middleware:", roles);
   if (typeof roles === "string") roles = [roles];
-  
   return async (req, res, next) => {
     try {
       const authHeader = req.headers.authorization;
@@ -13,16 +12,28 @@ const protect = (roles = []) => {
         return res.status(401).json({ message: "No token, authorization denied" });
       }
       const token = authHeader.split(" ")[1];
-      console.log("Token from header:", token);
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log(decoded);
-      const user = await DoctorVerificationShema.findById({doctorId:decoded.doctorId});
-      console.log(user);
-      if (!user) return res.status(401).json({ message: "User not found" });
+
+      let user = null;
+      let role = decoded.role;
+
+      if (role === "doctor") {
+        user = await DoctorVerificationShema.findOne({ doctorId: decoded.id });
+        if (!user) {
+          user = await Doctor.findById(decoded.id);
+        }
+      } else if (role === "patient") {
+        user = await Patient.findById(decoded.id);
+      }
+
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
 
       req.user = user;
+      req.user.role = role;
 
-      if (roles.length && !roles.includes(user.role)) {
+      if (roles.length && !roles.includes(role)) {
         return res.status(403).json({ message: "Access forbidden: insufficient rights" });
       }
 

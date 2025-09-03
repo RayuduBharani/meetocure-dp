@@ -2,6 +2,7 @@ const Availability = require("../models/Availability");
 const Slot = require("../models/Slot");
 
 const setAvailability = async (req, res) => {
+  console.log("tesing set availability");
   try {
     const doctorId = req.user.id;
     const { days } = req.body;

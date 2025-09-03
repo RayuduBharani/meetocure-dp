@@ -6,12 +6,12 @@ const availabilitySchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "DoctorVerification",
       required: true,
-      unique: true
+      unique: true  
     },
     days: [
       {
-        date: { type: String, required: true }, // "2025-06-13"
-        slots: [String] // ["9:00 AM", "9:30 AM"]
+        date: { type: String, required: true },
+        slots: [String]
       }
     ]
   },
