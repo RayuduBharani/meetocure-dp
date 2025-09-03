@@ -54,10 +54,9 @@ import PatientPublicForm from "./pages/patient/PatientEnquery/PatientPublicForm"
 import PatientSos from "./pages/patient/SOS/PatientSos";
 import SendNotification from './components/SendNotification.jsx';
 import NotificationsList from './components/NotificationList.jsx';
-const userId = 'PATIENT_OBJECT_ID';
+
 
 import { GoogleMapsProvider } from './contexts/GoogleMapsContext';
-import { AuthProvider } from "./contexts/AuthContext.jsx";
 import AppointmentProvider from "./contexts/AppointmentContext.jsx";
 
 function App() {

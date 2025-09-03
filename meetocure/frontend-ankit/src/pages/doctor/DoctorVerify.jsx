@@ -16,8 +16,10 @@ const DoctorVerify = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
   const [otpVerified, setOtpVerified] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [showPopup, setShowPopup] = useState(false);
 
+  // eslint-disable-next-line no-unused-vars
   const [registrationStatus, setRegistrationStatus] = useState("pending_verification");
 
   const handleChange = (e) => {
@@ -86,14 +88,16 @@ const DoctorVerify = () => {
       );
 
       console.log(res);
-      if (res.data.registrationStatus === "pending_verification") {
-        toast.dismiss(loadingToast);
-        navigate(`/doctor-verification/?doctorId=${res.data.doctorId}`);
-      } else if (res.data.registrationStatus === "verified") {
+      if (res.data.doctor && res.data.doctor.registrationStatus === "verified") {
         localStorage.setItem("doctorToken", res.data.token);
+        localStorage.setItem("doctorInfo", JSON.stringify(res.data.doctor));
         toast.dismiss(loadingToast);
         toast.success("Login successful!");
         navigate("/doctor-dashboard");
+      } else if (res.data.registrationStatus === "pending_verification" || res.data.doctor?.registrationStatus === "pending_verification") {
+        const doctorId = res.data.doctorId || res.data.doctor?.doctorId;
+        toast.dismiss(loadingToast);
+        navigate(`/doctor-verification/?doctorId=${doctorId}`);
       }
     } catch (err) {
       toast.dismiss(loadingToast);
