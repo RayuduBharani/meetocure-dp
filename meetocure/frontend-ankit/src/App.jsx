@@ -77,7 +77,7 @@ function App() {
         <Route path="/doctor/patient/:id" element={<DoctorPatientDetailsPage />} />
         <Route path="/doctor/stats" element={<QuickStatsPage />} />
         <Route path="/doctor/availability" element={<DoctorAvailability />} />
-        <Route path="/doctor/availability/change" element={<ChangeAvailability />} />
+        <Route path="/doctor/availability/change/:date" element={<ChangeAvailability />} />
         <Route path="/doctor/availability/add" element={<AddAvailability />} />
         <Route path="/doctor/profile" element={<DoctorProfilePage />} />
         <Route path="/doctor/profile/edit" element={<EditProfile />} />

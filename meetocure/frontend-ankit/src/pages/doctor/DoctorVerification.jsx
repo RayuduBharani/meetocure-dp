@@ -22,11 +22,13 @@ export const DoctorVerification = () => {
     category: "General",
     qualifications: [{ degree: "", universityCollege: "", year: "" }],
     experienceYears: "",
+    // changed: make affiliations an array (JSX maps over this)
     clinicHospitalAffiliations: [
       {
         name: "",
         city: "",
         state: "",
+        // keep startDate/endDate here to match the existing form fields
         startDate: "",
         endDate: "",
         designation: "",
@@ -34,18 +36,20 @@ export const DoctorVerification = () => {
     ],
     aadhaarNumber: "",
     panNumber: "",
+    // these will be filled by backend after file upload; keep keys for clarity
     identityDocumentUrl: "",
     medicalCouncilCertificateUrl: "",
-    qualificationCertificatesUrls: [""],
-  digitalSignatureCertificateId: "",
-  // profileImage will be uploaded via file input and sent as multipart/form-data
+    qualificationCertificatesUrls: [],
+    digitalSignatureCertificateUrl: "",
+    profileImage: "",
   });
 
-  // Local file state
+  // Local file state (images only)
   const [profileImageFile, setProfileImageFile] = useState(null);
-  const [identityDocumentFile, setIdentityDocumentFile] = useState(null);
+  const [identityDocumentFile, setIdentityDocumentFile] = useState(null); // Aadhaar image
   const [medicalCouncilCertificateFile, setMedicalCouncilCertificateFile] = useState(null);
   const [qualificationCertificateFiles, setQualificationCertificateFiles] = useState([]);
+  const [digitalSignatureFile, setDigitalSignatureFile] = useState(null);
 
   useEffect(() => {
     if (!doctorId) {
@@ -56,10 +60,16 @@ export const DoctorVerification = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    // support nested affiliation keys
+    if (name.startsWith("affiliation.")) {
+      const key = name.split(".")[1];
+      setFormData(prev => ({ ...prev, clinicHospitalAffiliations: { ...prev.clinicHospitalAffiliations, [key]: value } }));
+      return;
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e, setter, multiple = false, index = null) => {
+  const handleFileChange = (e, setter, multiple = false) => {
     if (multiple) {
       const files = Array.from(e.target.files);
       setQualificationCertificateFiles(files);
@@ -69,7 +79,7 @@ export const DoctorVerification = () => {
     }
   };
 
-  // Qualifications handlers
+  // qualifications handlers unchanged...
   const handleQualificationChange = (index, field, value) => {
     setFormData((prev) => {
       const quals = [...prev.qualifications];
@@ -88,64 +98,67 @@ export const DoctorVerification = () => {
       qualifications: prev.qualifications.filter((_, i) => i !== index),
     }));
 
-  // Clinic/Hospital affiliations handlers
+  // add affiliation handlers
   const handleAffiliationChange = (index, field, value) => {
     setFormData((prev) => {
-      const affs = [...prev.clinicHospitalAffiliations];
+      const affs = Array.isArray(prev.clinicHospitalAffiliations)
+        ? [...prev.clinicHospitalAffiliations]
+        : [];
       affs[index] = { ...affs[index], [field]: value };
       return { ...prev, clinicHospitalAffiliations: affs };
     });
   };
-  const addAffiliation = () =>
+
+  const addAffiliation = () => {
     setFormData((prev) => ({
       ...prev,
       clinicHospitalAffiliations: [
-        ...prev.clinicHospitalAffiliations,
+        ...(Array.isArray(prev.clinicHospitalAffiliations) ? prev.clinicHospitalAffiliations : []),
         { name: "", city: "", state: "", startDate: "", endDate: "", designation: "" },
       ],
     }));
-  const removeAffiliation = (index) =>
+  };
+
+  const removeAffiliation = (index) => {
     setFormData((prev) => ({
       ...prev,
-      clinicHospitalAffiliations: prev.clinicHospitalAffiliations.filter((_, i) => i !== index),
+      clinicHospitalAffiliations: (prev.clinicHospitalAffiliations || []).filter((_, i) => i !== index),
     }));
-
-  // Qualification certificate URLs handlers
-  const handleCertChange = (index, value) => {
-    setFormData((prev) => {
-      const certs = [...prev.qualificationCertificatesUrls];
-      certs[index] = value;
-      return { ...prev, qualificationCertificatesUrls: certs };
-    });
   };
-  const addCert = () =>
-    setFormData((prev) => ({ ...prev, qualificationCertificatesUrls: [...prev.qualificationCertificatesUrls, ""] }));
-  const removeCert = (index) =>
-    setFormData((prev) => ({ ...prev, qualificationCertificatesUrls: prev.qualificationCertificatesUrls.filter((_, i) => i !== index) }));
 
+  // Submit — send multipart/form-data with image files.
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // client-side checks: ensure required image files provided
+    if (!profileImageFile) return toast.error("Profile image is required");
+    if (!identityDocumentFile) return toast.error("Aadhaar image is required");
+    if (!medicalCouncilCertificateFile) return toast.error("Medical council certificate image is required");
+    if (!digitalSignatureFile) return toast.error("Digital signature certificate image is required");
+    if (qualificationCertificateFiles.length === 0) return toast.error("At least one qualification certificate image is required");
+
     const loadingToast = toast.loading("Submitting verification...");
 
     try {
       const url = `${import.meta.env.VITE_BACKEND_URL}/api/doctor/verify-doctor/?doctorId=${doctorId}`;
       const fd = new FormData();
 
-      // Append scalar fields
+      // Append scalar fields (stringify objects/arrays)
       Object.keys(formData).forEach((key) => {
         const val = formData[key];
-        // For arrays/objects, stringify them so backend can parse
+        if (val === undefined || val === null) return;
         if (Array.isArray(val) || typeof val === 'object') {
           fd.append(key, JSON.stringify(val));
-        } else if (val !== undefined && val !== null) {
+        } else {
           fd.append(key, val);
         }
       });
 
-      // Append files
-      if (profileImageFile) fd.append('profileImage', profileImageFile);
-      if (identityDocumentFile) fd.append('identityDocument', identityDocumentFile);
-      if (medicalCouncilCertificateFile) fd.append('medicalCouncilCertificate', medicalCouncilCertificateFile);
+      // Append image files with names backend expects
+      fd.append('profileImage', profileImageFile);
+      fd.append('identityDocument', identityDocumentFile); // Aadhaar image
+      fd.append('medicalCouncilCertificate', medicalCouncilCertificateFile);
+      fd.append('digitalSignatureCertificate', digitalSignatureFile);
       qualificationCertificateFiles.forEach((f) => fd.append('qualificationCertificates', f));
 
       const res = await axios.post(url, fd, {
@@ -153,14 +166,13 @@ export const DoctorVerification = () => {
       });
 
       toast.dismiss(loadingToast);
-      const { token, doctor } = res.data;
       if (res.data.success) {
         toast.success("Verification submitted successfully!");
-        if (token) localStorage.setItem("doctorToken", token);
-        if (doctor) localStorage.setItem("user", JSON.stringify(doctor));
+        if (res.data.token) localStorage.setItem("doctorToken", res.data.token);
+        if (res.data.doctor) localStorage.setItem("user", JSON.stringify(res.data.doctor));
         navigate("/doctor-dashboard");
       } else {
-        toast.error("Verification failed. Please try again.");
+        toast.error(res.data.message || "Verification failed");
       }
     } catch (err) {
       toast.dismiss(loadingToast);
@@ -171,9 +183,7 @@ export const DoctorVerification = () => {
   return (
     <div className="min-h-screen bg-white font-[Poppins] px-6 pt-6 pb-28">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-extrabold text-[#004B5C] text-center mb-6">
-          Doctor Professional Verification
-        </h1>
+        <h1 className="text-3xl font-extrabold text-[#004B5C] text-center mb-6">Doctor Professional Verification</h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Full Name */}
@@ -450,81 +460,39 @@ export const DoctorVerification = () => {
             />
           </div>
 
-          {/* Profile Image (required) */}
+          {/* Aadhaar Image (identity document) */}
+          <div>
+            <label className="block text-sm font-semibold mb-1">Aadhaar Image (Required)</label>
+            <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setIdentityDocumentFile)} required className="w-full border border-gray-300 px-3 py-2 rounded" />
+            <small className="text-gray-500">Upload Aadhaar as an image (jpg/png/gif).</small>
+          </div>
+
+          {/* Medical Council Certificate (image) */}
+          <div>
+            <label className="block text-sm font-semibold mb-1">Medical Council Certificate (Image)</label>
+            <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setMedicalCouncilCertificateFile)} required className="w-full border border-gray-300 px-3 py-2 rounded" />
+          </div>
+
+          {/* Qualification Certificate Images (multiple) */}
+          <div>
+            <label className="block text-sm font-semibold mb-1">Qualification Certificate Images (you can select multiple)</label>
+            <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, null, true)} required className="w-full border border-gray-300 px-3 py-2 rounded" />
+            <small className="text-gray-500">Upload images (jpg/png/gif) of degree certificates.</small>
+          </div>
+
+          {/* Digital Signature Certificate (image) */}
+          <div>
+            <label className="block text-sm font-semibold mb-1">Digital Signature Certificate (Image)</label>
+            <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setDigitalSignatureFile)} required className="w-full border border-gray-300 px-3 py-2 rounded" />
+          </div>
+
+          {/* Profile Image */}
           <div>
             <label className="block text-sm font-semibold mb-1">Profile Image (Required)</label>
-            <input
-              type="file"
-              name="profileImage"
-              accept="image/*"
-              onChange={(e) => handleFileChange(e, setProfileImageFile)}
-              required
-              className="w-full border border-gray-300 px-3 py-2 rounded"
-            />
-            <small className="text-gray-500">Upload a clear professional headshot (JPEG/PNG).</small>
+            <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setProfileImageFile)} required className="w-full border border-gray-300 px-3 py-2 rounded" />
           </div>
 
-          {/* Identity Document URL */}
-          <div>
-            <label className="block text-sm font-semibold mb-1">Identity Document URL</label>
-            <input
-              type="url"
-              name="identityDocumentUrl"
-              placeholder="https://example.com/id-proof.pdf"
-              value={formData.identityDocumentUrl}
-              onChange={handleChange}
-              required
-              className="w-full border border-gray-400 px-4 py-2 rounded-xl"
-            />
-          </div>
-
-          {/* Medical Council Certificate URL */}
-          <div>
-            <label className="block text-sm font-semibold mb-1">Medical Council Certificate URL</label>
-            <input
-              type="url"
-              name="medicalCouncilCertificateUrl"
-              placeholder="https://example.com/council-cert.pdf"
-              value={formData.medicalCouncilCertificateUrl}
-              onChange={handleChange}
-              required
-              className="w-full border border-gray-400 px-4 py-2 rounded-xl"
-            />
-          </div>
-
-          {/* Qualification Certificate URLs (dynamic) */}
-          <div>
-            <label className="block text-sm font-semibold mb-1">Qualification Certificate Files (you can select multiple)</label>
-            <input
-              type="file"
-              multiple
-              accept="application/pdf,image/*"
-              onChange={(e) => handleFileChange(e, null, true)}
-              className="w-full border border-gray-300 px-3 py-2 rounded"
-            />
-            <small className="text-gray-500">You can upload PDFs or images for your degree certificates. URLs are optional now.</small>
-          </div>
-
-          {/* Digital Signature Certificate ID (optional) */}
-          <div>
-            <label className="block text-sm font-semibold mb-1">Digital Signature Certificate ID (Optional)</label>
-            <input
-              type="text"
-              name="digitalSignatureCertificateId"
-              placeholder="Enter certificate ID"
-              value={formData.digitalSignatureCertificateId}
-              onChange={handleChange}
-              className="w-full border border-gray-400 px-4 py-2 rounded-xl"
-            />
-          </div>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            className="w-full py-3 rounded-full font-semibold bg-[#004B5C] text-white hover:bg-[#003246] transition"
-          >
-            Submit for Verification
-          </button>
+          <button type="submit" className="w-full py-3 rounded-full font-semibold bg-[#004B5C] text-white hover:bg-[#003246] transition">Submit for Verification</button>
         </form>
       </div>
     </div>

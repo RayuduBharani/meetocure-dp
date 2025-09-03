@@ -4,6 +4,7 @@ const Doctor = require("../models/DoctorShema");
 const Patient = require("../models/Patient");
 
 const protect = (roles = []) => {
+
   if (typeof roles === "string") roles = [roles];
   return async (req, res, next) => {
     try {
@@ -37,6 +38,7 @@ const protect = (roles = []) => {
         return res.status(403).json({ message: "Access forbidden: insufficient rights" });
       }
 
+  
       next();
     } catch (error) {
       return res.status(401).json({ message: "Token is not valid or expired" });

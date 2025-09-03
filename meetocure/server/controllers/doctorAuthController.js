@@ -33,11 +33,11 @@ const sendOtp = async (req, res) => {
       { codeHash, expiresAt: Date.now() + 5 * 60 * 1000, attempts: 0 },
       { upsert: true, new: true }
     );
-    await client.messages.create({
-      body: `Your verification code is: ${otp}`,
-      messagingServiceSid: TWILIO_MESSAGING_SERVICE_SID,
-      to: phone,
-    });
+    // await client.messages.create({
+    //   body: `Your verification code is: ${otp}`,
+    //   messagingServiceSid: TWILIO_MESSAGING_SERVICE_SID,
+    //   to: phone,
+    // });
 
     console.log(`OTP for ${phone}: ${otp}`); // For testing purposes only
     const doctor = await Doctor.findOne({ mobileNumber: phone });
@@ -147,7 +147,7 @@ const doctorAuth = async (req, res) => {
         });
       }
 
-      const token = jwt.sign({ id: doctor._id, role: "doctor" }, JWT_SECRET, { expiresIn: "1d" });
+      const token = jwt.sign({ id: doctor._id, role: "doctor" }, JWT_SECRET, { expiresIn: "7d" });
       return res.json({
         message: "Login successful",
         token,

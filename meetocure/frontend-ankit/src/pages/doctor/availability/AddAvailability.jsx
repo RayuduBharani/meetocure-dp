@@ -4,11 +4,10 @@ import { FaArrowLeft } from "react-icons/fa";
 import TopIcons from "../../../components/TopIcons";
 import axios from "axios";
 import { API_BASE_URL } from "../../../lib/config";
-import { useNotifications } from "../../../contexts/NotificationContext";
+import toast, { Toaster } from "react-hot-toast";
 
 const AddAvailability = () => {
   const navigate = useNavigate();
-  const { success, error, loading, dismissLoading, handleError, successMsg } = useNotifications();
   const [selectedDate, setSelectedDate] = useState("YYYY-MM-DD");
   const [selectedSlots, setSelectedSlots] = useState([]);
 
@@ -18,6 +17,7 @@ const AddAvailability = () => {
     "3:00 PM", "3:30 PM", "4:00 PM", "4:30 PM", "5:00 PM", "5:30 PM"
   ];
 
+ 
   const toggleSlot = (slot) => {
     setSelectedSlots(prev =>
       prev.includes(slot) ? prev.filter(s => s !== slot) : [...prev, slot]
@@ -26,17 +26,22 @@ const AddAvailability = () => {
 
   const handleConfirm = async () => {
     if (!selectedDate || selectedSlots.length === 0) {
-      error("Please select a date and at least one slot.");
+      toast.error("Please select a date and at least one slot.", {
+        position: "top-right",
+        duration: 3000,
+      });
       return;
     }
 
-    const loadingKey = "addAvailability";
-    loading(loadingKey, "Adding availability...");
-
+    const loadingToast = toast.loading("Adding availability...", {
+      position: "top-right",
+    });
+    
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("doctorToken");
+      console.log("Token:", token);
       await axios.post(
-        `${API_BASE_URL}/api/availability`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/availability`,
         {
           days: [
             {
@@ -52,17 +57,24 @@ const AddAvailability = () => {
         }
       );
 
-      dismissLoading(loadingKey);
-      success(successMsg("availabilityUpdated"));
+      toast.success("Availability updated successfully!", {
+        id: loadingToast,
+        position: "top-right",
+        duration: 3000,
+      });
       navigate("/doctor/availability");
     } catch (err) {
-      dismissLoading(loadingKey);
-      handleError(err, "Failed to add availability");
+      toast.error(err.response?.data?.message || "Failed to add availability", {
+        id: loadingToast,
+        position: "top-right",
+        duration: 3000,
+      });
     }
   };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-[Poppins] px-6 py-8">
+      <Toaster />
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-3">

@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { FaArrowLeft, FaCalendarAlt, FaClock, FaPlus } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import BottomNav from "../../../components/BottomNav";
 import TopIcons from "../../../components/TopIcons";
 import axios from "axios";
-import { API_BASE_URL } from "../../../lib/config";
 import toast, { Toaster } from "react-hot-toast";
 
 const DoctorAvailability = () => {
@@ -12,26 +10,35 @@ const DoctorAvailability = () => {
   const [availability, setAvailability] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  
+
+
   useEffect(() => {
     const fetchAvailability = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const user = JSON.parse(localStorage.getItem("user"));
-        const doctorId = user?._id;
+        setLoading(true);
+        const token = localStorage.getItem("doctorToken");
+        const user = JSON.parse(localStorage.getItem("doctorInfo") || "{}");
+        const doctorId = user?.doctorId;
         if (!doctorId) {
+          setAvailability([]);
           setLoading(false);
           return;
         }
+
         const res = await axios.get(
-          `${API_BASE_URL}/api/availability/${doctorId}`,
+          `${import.meta.env.VITE_BACKEND_URL}/api/availability/${doctorId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           }
         );
+
+        // backend returns availability doc; we want days array
         setAvailability(res.data.days || []);
       } catch (err) {
+        console.error("Fetch availability error:", err);
         toast.error("Failed to fetch availability");
         setAvailability([]);
       } finally {
@@ -41,7 +48,7 @@ const DoctorAvailability = () => {
     fetchAvailability();
   }, []);
 
-  // Sort availability by date ascending
+  // Sort by date ascending (works with YYYY-MM-DD)
   const sortedAvailability = [...availability].sort((a, b) =>
     a.date.localeCompare(b.date)
   );
@@ -53,9 +60,12 @@ const DoctorAvailability = () => {
     }
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("doctorToken");
+      // encode date in case of special chars
+      const encodedDate = encodeURIComponent(date);
+
       await toast.promise(
-        axios.delete(`${API_BASE_URL}/api/availability/${date}`, {
+        axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/availability/${encodedDate}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         {
@@ -64,9 +74,11 @@ const DoctorAvailability = () => {
           error: "Failed to delete availability",
         }
       );
+
+      // remove from UI
       setAvailability((prev) => prev.filter((d) => d.date !== date));
     } catch (err) {
-      console.error(err);
+      console.error("Delete availability error:", err);
       toast.error("Something went wrong");
     }
   };
@@ -113,7 +125,7 @@ const DoctorAvailability = () => {
                 day: "numeric",
               })}
               slots={day.slots}
-              onChange={() => navigate("/doctor/availability/change")}
+              onChange={() => navigate(`/doctor/availability/change/${day.date}`)}
               onDelete={() => handleDeleteDate(day.date)}
             />
           ))
@@ -121,7 +133,7 @@ const DoctorAvailability = () => {
       </div>
 
       {/* Floating Add Button */}
-      <div className="fixed bottom-6 right-6 md:right-10">
+      <div className="fixed bottom-16 right-6 md:right-10">
         <button
           onClick={() => navigate("/doctor/availability/add")}
           className="bg-[#0A4D68] hover:bg-[#08374f] text-white px-6 py-3 rounded-full text-sm font-semibold flex items-center gap-2 shadow-lg"
@@ -130,10 +142,6 @@ const DoctorAvailability = () => {
         </button>
       </div>
 
-      {/* BottomNav (only mobile) */}
-      <div className="block md:hidden mt-10">
-        <BottomNav />
-      </div>
     </div>
   );
 };

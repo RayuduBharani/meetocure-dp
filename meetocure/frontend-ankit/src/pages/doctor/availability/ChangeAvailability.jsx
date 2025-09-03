@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
 import BottomNav from "../../../components/BottomNav";
 import TopIcons from "../../../components/TopIcons";
@@ -15,7 +15,8 @@ const timeSlots = [
 
 const ChangeAvailability = () => {
   const navigate = useNavigate();
-  const [selectedDate, setSelectedDate] = useState("YYYY-MM-DD");
+  const { date } = useParams(); // get date from route param
+  // removed: selectedDate state (we use route param)
   const [selectedSlots, setSelectedSlots] = useState([]);
 
   const toggleSlot = (slot) => {
@@ -26,41 +27,35 @@ const ChangeAvailability = () => {
 
   const resetSlots = () => setSelectedSlots([]);
 
-  const handleConfirm = async () => {
-    if (!selectedDate || selectedSlots.length === 0) {
-      toast.error("Please select a date and at least one slot.");
-      return;
-    }
+const handleConfirm = async () => {
+  if (!date || selectedSlots.length === 0) {
+    toast.error("Please select a date (from route) and at least one slot.");
+    return;
+  }
 
-    try {
-      const token = localStorage.getItem("token");
-      const loadingToast = toast.loading("Updating availability...");
+  try {
+    const token = localStorage.getItem("doctorToken") || localStorage.getItem("token");
+    const loadingToast = toast.loading("Updating availability...");
 
-      await axios.post(
-        `${API_BASE_URL}/api/availability`,
-        {
-          days: [
-            {
-              date: selectedDate,
-              slots: selectedSlots,
-            },
-          ],
+    // Use PUT to update specific date (date comes from route param)
+    await axios.put(
+      `${import.meta.env.VITE_BACKEND_URL}/api/availability/${encodeURIComponent(date)}`,
+      { slots: selectedSlots },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      }
+    );
 
-      toast.dismiss(loadingToast);
-      toast.success("Availability updated successfully");
-      navigate("/doctor/availability");
-    } catch (err) {
-      toast.dismiss();
-      toast.error(err.response?.data?.message || err.message || "Failed to update availability");
-    }
-  };
+    toast.dismiss(loadingToast);
+    toast.success("Availability updated successfully");
+    navigate("/doctor/availability");
+  } catch (err) {
+    toast.dismiss();
+    toast.error(err.response?.data?.message || err.message || "Failed to update availability");
+  }
+};
 
   return (
     <div className="relative bg-[#F8FAFC] min-h-screen font-[Poppins] px-4 py-6 md:px-10 md:py-10 overflow-hidden">
@@ -85,13 +80,8 @@ const ChangeAvailability = () => {
 
       {/* Availability Form */}
       <div className="max-w-3xl mx-auto bg-white p-8 rounded-3xl shadow-xl border border-gray-100 transition-all">
-        <h2 className="text-lg font-bold text-[#1F2A37] mb-3">Select Date</h2>
-        <input
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="w-full mb-8 p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0A4D68] text-[#0A4D68] font-medium text-sm shadow-sm"
-        />
+        <h2 className="text-lg font-bold text-[#1F2A37] mb-3">Date</h2>
+        <p className="mb-6 text-[#0A4D68] font-medium">{date ? new Date(date).toLocaleDateString() : "No date provided"}</p>
 
         <h2 className="text-lg font-bold text-[#1F2A37] mb-4">Select Hour</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">

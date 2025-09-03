@@ -8,7 +8,7 @@ const cloudinary = require('../utils/cloudinary');
 const uploadBufferToCloudinary = (buffer, folder, filename) => {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder, public_id: filename, resource_type: 'auto' },
+      { folder, public_id: filename, resource_type: 'image' },
       (error, result) => {
         if (error) return reject(error);
         resolve(result.secure_url);
@@ -40,7 +40,7 @@ const verifyDoctor = async (req, res) => {
         data.profileImage = url;
       }
 
-      // identityDocument
+      // identityDocument (Aadhaar image) -> identityDocumentUrl
       if (req.files.identityDocument && req.files.identityDocument[0]) {
         const file = req.files.identityDocument[0];
         const url = await uploadBufferToCloudinary(file.buffer, 'doctor_verifications', `identity_${doctorId}`);
@@ -63,6 +63,13 @@ const verifyDoctor = async (req, res) => {
         }
         data.qualificationCertificatesUrls = certUrls;
       }
+
+      // digitalSignatureCertificate -> digitalSignatureCertificateUrl
+      if (req.files.digitalSignatureCertificate && req.files.digitalSignatureCertificate[0]) {
+        const file = req.files.digitalSignatureCertificate[0];
+        const url = await uploadBufferToCloudinary(file.buffer, 'doctor_verifications', `dsig_${doctorId}`);
+        data.digitalSignatureCertificateUrl = url;
+      }
     }
 
     // Parse JSON fields that might be sent as strings (e.g., arrays or objects)
@@ -70,9 +77,27 @@ const verifyDoctor = async (req, res) => {
       if (typeof data.qualifications === 'string') data.qualifications = JSON.parse(data.qualifications);
       if (typeof data.clinicHospitalAffiliations === 'string') data.clinicHospitalAffiliations = JSON.parse(data.clinicHospitalAffiliations);
       if (typeof data.qualificationCertificatesUrls === 'string') data.qualificationCertificatesUrls = JSON.parse(data.qualificationCertificatesUrls);
+      if (typeof data.location === 'string') data.location = JSON.parse(data.location);
     } catch (parseErr) {
-      // ignore parse errors and keep original strings
       console.warn('Failed to parse some JSON fields:', parseErr.message);
+    }
+
+    // Server-side required field checks (ensure required image URLs present)
+    if (!data.profileImage) return res.status(400).json({ message: "Profile image is required" });
+    if (!data.identityDocumentUrl) return res.status(400).json({ message: "Aadhaar image (identityDocument) is required" });
+    if (!data.medicalCouncilCertificateUrl) return res.status(400).json({ message: "Medical council certificate image is required" });
+    if (!data.digitalSignatureCertificateUrl) return res.status(400).json({ message: "Digital signature certificate image is required" });
+    if (!Array.isArray(data.qualificationCertificatesUrls) || data.qualificationCertificatesUrls.length === 0) {
+      return res.status(400).json({ message: "At least one qualification certificate image is required" });
+    }
+    if (!data.medicalCouncilRegistrationNumber) {
+      return res.status(400).json({ message: "medicalCouncilRegistrationNumber is required" });
+    }
+
+    // Ensure medicalCouncilRegistrationNumber is unique across verifications (and optionally doctors)
+    const existing = await DoctorVerification.findOne({ medicalCouncilRegistrationNumber: data.medicalCouncilRegistrationNumber });
+    if (existing && existing.doctorId.toString() !== doctorId.toString()) {
+      return res.status(400).json({ message: "This medical council registration number is already used" });
     }
 
     const verification = new DoctorVerification({
@@ -82,7 +107,8 @@ const verifyDoctor = async (req, res) => {
     await verification.save();
 
     doctor.verificationDetails = verification._id;
-    doctor.registrationStatus = "verified"; // in production consider 'under_review'
+    // Consider 'under_review' if you have workflow — keeping 'verified' as before:
+    doctor.registrationStatus = "verified";
     await doctor.save();
 
     const token = jwt.sign(
