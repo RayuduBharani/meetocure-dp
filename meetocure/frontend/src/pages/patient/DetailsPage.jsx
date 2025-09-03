@@ -83,7 +83,7 @@ const DetailsPage = () => {
                   <p className="text-gray-600 mb-2">{doctor.primarySpecialization || doctor.specialization}</p>
                   <div className="flex items-center gap-1 text-gray-500 text-sm">
                     <FaMapMarkerAlt className="w-3 h-3" />
-                    <span>{doctor.clinicHospitalAffiliations[0].city || "Location not available"}</span>
+                    <span>{doctor.location?.city || "Location not available"}</span>
                   </div>
                 </div>
                 <button

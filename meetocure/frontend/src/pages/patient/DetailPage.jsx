@@ -100,11 +100,11 @@ const DetailPage = () => {
             </h2>
             <div className="flex items-center gap-4 text-gray-600 mb-1">
               <span className="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
-                {doctor.primarySpecialization || "General Practitioner"}
+                {doctor.category || "General Practitioner"}
               </span>
             </div>
             <p className="text-gray-500 flex items-center gap-1">
-              {doctor.location || "Location not available"}
+              {doctor.location.city || "Location not available"}
             </p>
           </div>
           <i className="far fa-heart text-2xl text-gray-400 cursor-pointer"></i>

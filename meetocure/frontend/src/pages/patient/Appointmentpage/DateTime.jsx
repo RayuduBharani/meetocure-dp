@@ -4,12 +4,7 @@ import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import TopIcons from "../../../components/PatientTopIcons";
 import toast from "react-hot-toast";
-
-const timeSlots = [
-  "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
-  "3:00 PM", "3:30 PM", "4:00 PM", "4:30 PM", "5:00 PM", "5:30 PM",
-  "6:00 PM", "6:30 PM", "7:00 PM"
-];
+import axios from "axios";
 
 const monthNames = [
   "January", "February", "March", "April", "May", "June",
@@ -19,12 +14,10 @@ const monthNames = [
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const DateTime = () => {
-  
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const doctorId = searchParams.get("doctorId");
   const today = new Date();
-
 
   useEffect(() => {
     if (!doctorId) {
@@ -32,10 +25,17 @@ const DateTime = () => {
       navigate("/patient-dashboard");
     }
   }, [doctorId, navigate]);
+
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
+
+  // New: availability state from backend
+  const [availabilityDays, setAvailabilityDays] = useState(null); // array of {date, slots}
+  const [availableSlots, setAvailableSlots] = useState([]); // slots for selectedDate
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotsError, setSlotsError] = useState("");
 
   const generateCalendar = () => {
     const firstDay = new Date(currentYear, currentMonth, 1);
@@ -70,29 +70,75 @@ const DateTime = () => {
   };
 
   const handleDateSelect = (date) => {
-    if (date < today.setHours(0, 0, 0, 0)) return;
-    
-    // Create date string in YYYY-MM-DD format without timezone conversion
+    if (date < new Date().setHours(0, 0, 0, 0)) return;
+
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const formatted = `${year}-${month}-${day}`;
-    
+
     setSelectedDate(formatted);
+    setSelectedTime("");
+    // clear previously loaded slots when selecting a new date
+    setAvailableSlots([]);
+    setSlotsError("");
   };
 
-const handleContinue = () => {
-  if (selectedDate && selectedTime) {
-    navigate("/patient/appointments/patient-detail", {
-      state: {
-        date: selectedDate,
-        time: selectedTime,
-        doctorId // 👈 pass the doctor ID here
-      },
-    });
-  }
-};
+  // Fetch availability for doctor and pick slots for selected date
+  const fetchAvailabilityForDate = async () => {
+    if (!doctorId) {
+      toast.error("Doctor ID missing");
+      return;
+    }
+    if (!selectedDate) {
+      toast.error("Please select a date first");
+      return;
+    }
 
+    // if we already fetched availabilityDays once, reuse it
+    if (availabilityDays) {
+      const day = availabilityDays.find(d => d.date === selectedDate);
+      setAvailableSlots(day ? day.slots || [] : []);
+      if (!day) setSlotsError("No slots set for this date");
+      return;
+    }
+
+    setLoadingSlots(true);
+    setSlotsError("");
+    try {
+      const base = import.meta.env.VITE_BACKEND_URL || "";
+      const res = await axios.get(`${base}/api/availability/${encodeURIComponent(doctorId)}`);
+      const data = res.data;
+      const days = data?.days || [];
+      setAvailabilityDays(days);
+
+      const day = days.find(d => d.date === selectedDate);
+      if (day && Array.isArray(day.slots) && day.slots.length > 0) {
+        setAvailableSlots(day.slots);
+      } else {
+        setAvailableSlots([]);
+        setSlotsError("No slots set for this date");
+      }
+    } catch (err) {
+      console.error("Fetch availability error:", err);
+      setSlotsError(err.response?.data?.message || "Failed to fetch availability");
+      setAvailableSlots([]);
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
+
+  const handleContinue = () => {
+    if (selectedDate && selectedTime) {
+      navigate("/patient/appointments/patient-detail", {
+        state: {
+          date: selectedDate,
+          time: selectedTime,
+          doctorId
+        },
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white px-4 py-6 lg:px-32 lg:py-10">
@@ -108,21 +154,21 @@ const handleContinue = () => {
       </div>
 
       {/* Step Indicators */}
-      <div className="flex justify-center mb-10">
-        <div className="flex items-center gap-6 text-center">
-          <div>
+      <div className="flex justify-center  mb-10">
+        <div className="flex items-center  gap-6 text-center">
+          <div className="flex flex-col items-center gap-y-0.5">
             <div className="w-10 h-10 rounded-full bg-[#0A4D68] text-white flex items-center justify-center font-semibold">1</div>
-            <p className="text-sm text-[#0A4D68] mt-2">Date & Time</p>
+            <p className="text-sm text-[#0A4D68]">Date & Time</p>
           </div>
-          <div className="w-10 h-px bg-gray-300 mt-4"></div>
-          <div>
+          <div className="w-14 h-px bg-gray-300 "></div>
+          <div className="flex flex-col items-center gap-y-0.5">
             <div className="w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-semibold">2</div>
-            <p className="text-sm text-gray-400 mt-2">Patient Detail</p>
+            <p className="text-sm text-gray-400 ">Patient Detail</p>
           </div>
-          <div className="w-10 h-px bg-gray-300 mt-4"></div>
-          <div>
+          <div className="w-14 h-px bg-gray-300 "></div>
+          <div className="flex flex-col items-center gap-y-0.5">
             <div className="w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-semibold">3</div>
-            <p className="text-sm text-gray-400 mt-2">Payment</p>
+            <p className="text-sm text-gray-400 ">Payment</p>
           </div>
         </div>
       </div>
@@ -156,10 +202,9 @@ const handleContinue = () => {
               }
 
               const isToday = date.toDateString() === today.toDateString();
-              // Format the current date and selected date in the same way for comparison
               const currentDateFormatted = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
               const isSelected = currentDateFormatted === selectedDate;
-              const isPast = date < today.setHours(0, 0, 0, 0);
+              const isPast = date < new Date().setHours(0, 0, 0, 0);
 
               return (
                 <div key={idx}>
@@ -187,21 +232,47 @@ const handleContinue = () => {
 
       {/* Time Slots */}
       <div className="max-w-4xl mx-auto mt-10">
-        <h2 className="text-2xl font-semibold text-center mb-4">Select Hour</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-semibold">Select Hour</h2>
+          {/* Load times button */}
+          <div>
+            {selectedDate ? (
+              <button
+                onClick={fetchAvailabilityForDate}
+                disabled={loadingSlots}
+                className="px-4 py-2 rounded-lg bg-[#0A4D68] text-white text-sm"
+              >
+                {loadingSlots ? "Loading..." : "Load Times"}
+              </button>
+            ) : (
+              <span className="text-sm text-gray-400">Select a date to load available times</span>
+            )}
+          </div>
+        </div>
+
+        {/* Display available slots from backend */}
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 justify-center">
-          {timeSlots.map((slot) => (
-            <button
-              key={slot}
-              onClick={() => setSelectedTime(slot)}
-              className={`py-2 px-4 rounded-xl text-sm font-medium border transition-all ${
-                selectedTime === slot
-                  ? "bg-[#0A4D68] text-white border-[#0A4D68]"
-                  : "bg-white border-gray-300 hover:border-[#0A4D68]"
-              }`}
-            >
-              {slot}
-            </button>
-          ))}
+          {loadingSlots ? (
+            <div className="col-span-full text-center text-gray-500">Loading slots...</div>
+          ) : availableSlots && availableSlots.length > 0 ? (
+            availableSlots.map((slot) => (
+              <button
+                key={slot}
+                onClick={() => setSelectedTime(slot)}
+                className={`py-2 px-4 rounded-xl text-sm font-medium border transition-all ${
+                  selectedTime === slot
+                    ? "bg-[#0A4D68] text-white border-[#0A4D68]"
+                    : "bg-white border-gray-300 hover:border-[#0A4D68]"
+                }`}
+              >
+                {slot}
+              </button>
+            ))
+          ) : (
+            <div className="col-span-full text-center text-gray-500">
+              {slotsError || "No available slots. Click 'Load Times' to fetch availability."}
+            </div>
+          )}
         </div>
 
         <div className="mt-10 flex justify-center">
@@ -222,4 +293,4 @@ const handleContinue = () => {
   );
 };
 
-export default DateTime;
+export default DateTime;

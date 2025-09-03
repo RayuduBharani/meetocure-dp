@@ -35,7 +35,7 @@ router.post("/search/:doctorId", async (req, res) => {
 });
 
 // Patient books appointment
-router.post("/", bookAppointment);
+router.post("/", bookAppointment); 
 
 //Patient views their own appointments 
 router.get("/my", protect(["patient"]), getPatientAppointments);

@@ -126,10 +126,10 @@ function App() {
                   <Route path="datetime" element={<DateTime />} />
                   <Route path="patient-detail" element={<PatientDetails />} />
 
-                  <Route path="payment" element={<Payment />} />
+                  {/* <Route path="payment" element={<Payment />} /> */}
 
                   {/* Add payment page when ready */}
-                  <Route path="payment" element={<Payment />} />
+                  {/* <Route path="payment" element={<Payment />} /> */}
                   <Route path="*" element={<PageNotFound />} />
 
                 </Routes>

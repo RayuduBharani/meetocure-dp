@@ -61,6 +61,7 @@ await Slot.insertMany(slotDocs);
 };
 
 const getAvailability = async (req, res) => {
+  console.log("testing the get avilability");
   try {
     const doctorId = req.params.doctorId;
 

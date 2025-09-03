@@ -7,7 +7,7 @@ const protect = require("../middleware/authMiddleware");
 router.post("/", protect("doctor"), setAvailability);
 
 // Patient can fetch doctor's availability
-router.get("/:doctorId", getAvailability);
+router.get("/:doctorId", getAvailability); 
 
 // Update slots for a specific date (doctor)
 router.put("/:date", protect("doctor"), updateAvailabilityDate);

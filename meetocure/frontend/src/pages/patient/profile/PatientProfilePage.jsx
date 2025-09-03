@@ -20,7 +20,7 @@ import { API_BASE_URL } from "../../../lib/config";
 const options = [
   { icon: <FaUserEdit />, label: "Edit Profile", path: "/patient/profile/edit" },
   { icon: <FaBell />, label: "Notifications", path: "/patient/notifications" },
-  { icon: <FaComments />, label: "Chat with AI", path: "/patient/ai-chat" },
+  { icon: <FaComments />, label: "Chat with AI", path: "/patient/chat" },
   { icon: <FaCog />, label: "Settings", path: "/patient/settings" },
   { icon: <FaQuestionCircle />, label: "Help and Support", path: "/patient/help" },
   { icon: <FaFileContract />, label: "Terms and Conditions", path: "/patient/terms" },
