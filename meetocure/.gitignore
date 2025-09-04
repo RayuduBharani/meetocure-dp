@@ -3,8 +3,11 @@
 /server/.env
 /server/.env.local
 ChatBot/.env
+/frontend/node_modules
+/frontend/.env
 ChatBot/.venv
 ChatBot/chroma_db2/
+fron
 .venv/
 __pycache__/
 *.sqlite3
