@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { getNotifications, deleteNotification } from '../lib/api';
+import axios from 'axios';
 import { socket, joinSocketRoom, onReceiveNotification, onNotificationDeleted, readNotification } from '../lib/socket';
 
-const NotificationsList = ({ userId }) => {
+const NotificationsList = ({ userId, token }) => {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
@@ -25,8 +25,14 @@ const NotificationsList = ({ userId }) => {
   }, [userId]);
 
   const fetchNotifications = async () => {
-    const data = await getNotifications(userId);
-    setNotifications(data);
+    try {
+      const res = await axios.get('/api/notifications/my', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotifications(res.data.notifications || []);
+    } catch (e) {
+      setNotifications([]);
+    }
   };
 
   const handleClick = async (id) => {

@@ -18,7 +18,7 @@ const sendOtp = async (req, res) => {
     const { phone } = req.body;
     if (!phone) return res.status(400).json({ message: "Phone required" });
 
-    const existingPatient = await Patient.findOne({phone});
+    const existingPatient = await Patient.findOne({ phone });
     if (existingPatient) {
       return res.status(400).json({ message: "This phone is already registered as a patient" });
     }
@@ -96,7 +96,7 @@ const doctorAuth = async (req, res) => {
     if (existingPatient) {
       return res.status(400).json({ message: "This phone is already registered as a patient" });
     }
-   
+
     let doctor = await Doctor.findOne({ email });
 
     if (!doctor) {
@@ -110,22 +110,17 @@ const doctorAuth = async (req, res) => {
         mobileNumber,
         registrationStatus: "pending_verification",
       });
-      // Emit socket event for new doctor registration
+      // Send welcome notification to doctor
       try {
-        const io = req.app.get('io');
-        const notification = await Notification.create({
-          message: `New doctor registration: ${email}`,
-          type: 'DOCTOR_REGISTRATION',
-          isRead: false,
-          createdAt: new Date()
+        const { createNotification } = require("./notificationController");
+        const notification = await createNotification({
+          userId: doctor._id,
+          title: "Welcome!",
+          message: `Welcome Dr. ${email} to MeetoCure! Your registration is pending verification.`,
+          type: "DOCTOR_REGISTRATION"
         });
-
-        io.emit('receiveNotification', {
-          type: 'DOCTOR_REGISTRATION',
-          message: `New doctor registration: ${email}`,
-          doctorId: doctor._id,
-          notificationId: notification._id
-        });
+        const io = req.app.get("io");
+        if (io) io.to(doctor._id.toString()).emit("receiveNotification", notification);
       } catch (error) {
         console.error('Failed to send notification:', error);
       }
@@ -151,10 +146,10 @@ const doctorAuth = async (req, res) => {
       return res.json({
         message: "Login successful",
         token,
-        doctor:{
-        doctorId: doctor._id,
-        registrationStatus: doctor.registrationStatus,
-        role: "doctor",
+        doctor: {
+          doctorId: doctor._id,
+          registrationStatus: doctor.registrationStatus,
+          role: "doctor",
         }
       });
     }

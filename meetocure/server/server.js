@@ -1,3 +1,4 @@
+
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
@@ -6,6 +7,8 @@ const PatientAuth = require("./routes/patientAuthRoutes");
 const doctorAuthRoutes = require("./routes/doctorAuthRoute");
 const { verifyDoctor } = require("./routes/DoctorVerification");
 const doctorVerifyRoutes = require("./routes/DoctorVerification");
+const http = require("http");
+const { Server } = require("socket.io");
 dotenv.config();
 connectDB();
 
@@ -31,25 +34,19 @@ app.use(cors({
   credentials: true,
 }));
 
-
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // API routes
-// Patient authentication route
 app.use("/api/auth/patient", PatientAuth);
-// Doctor authentication route
 app.use("/api/auth/doctor", doctorAuthRoutes);
-// Doctor verification form route
 app.use("/api/doctor", doctorVerifyRoutes);
-
 app.use("/api/doctor", require("./routes/doctorRoutes"));
 app.use("/api/appointments", require("./routes/appointmentRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/slots", require("./routes/slotRoutes"));
 app.use("/api/hospitals", require("./routes/hospitalRoutes"));
 app.use("/api/availability", require("./routes/availabilityRoutes"));
-// Enable when chat endpoint is ready
 app.use("/api/chat", require("./routes/chatRoutes"));
 app.use("/api/search", require("./routes/searchRoutes"));
 app.use("/api/doc&hosp", require("./routes/doc&hospRoutes"));
@@ -59,6 +56,35 @@ app.get("/", (req, res) => {
   res.send("API is Working");
 });
 
+// --- Socket.IO Setup ---
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+  },
+  path: "/socket.io",
+});
+
+app.set("io", io);
+
+io.on("connection", (socket) => {
+  console.log("Socket connected:", socket.id);
+
+  socket.on("join", (userId) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined room`);
+  });
+
+  socket.on("leave", (userId) => {
+    socket.leave(userId);
+    console.log(`User ${userId} left room`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Socket disconnected:", socket.id);
+  });
+});
+
 const PORT = process.env.PORT || 5001;
-// Use app.listen now that Socket.IO has been removed
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

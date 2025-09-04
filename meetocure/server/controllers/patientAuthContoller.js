@@ -46,7 +46,7 @@ exports.sendOtp = async (req, res) => {
     await client.messages.create({
       body: `Your verification code is From MeetOCure: ${otp}. It expires in 2 minutes.`,
       messagingServiceSid: TWILIO_MESSAGING_SERVICE_SID,
-      to: phone, 
+      to: phone,
     });
     console.log(`OTP for ${phone}: ${otp}`); //  Log OTP for testing
 
@@ -85,15 +85,26 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
-    
+
     let patient = await Patient.findOne({ phone });
     if (!patient) {
       patient = await Patient.create({ phone, notifications: [] });
     }
 
+    // Send welcome notification
+    const { createNotification } = require("./notificationController");
+    const notification = await createNotification({
+      userId: patient._id,
+      title: "Welcome!",
+      message: "Thank you for registering with MeetoCure.",
+      type: "GENERAL"
+    });
+    // Emit socket event
+    const io = req.app.get("io");
+    if (io) io.to(patient._id.toString()).emit("receiveNotification", notification);
+
     const token = signToken(patient);
 
-   
     await Otp.deleteOne({ phone });
 
     res.json({
@@ -103,7 +114,7 @@ exports.verifyOtp = async (req, res) => {
         _id: patient._id,
         phone: patient.phone,
         notifications: patient.notifications,
-        role:"patient",
+        role: "patient",
       },
     });
   } catch (err) {
