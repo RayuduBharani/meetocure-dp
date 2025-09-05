@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Paperclip, Mic, Send, ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import TopIcons from "../../../components/PatientTopIcons";
 
 /* Contact card showing avatar, name and role */
@@ -28,207 +28,7 @@ const ContactCard = ({ name, role, avatar = "/assets/logo.png" }) => {
   );
 };
 
-/* Single message bubble */
-const Message = ({ content, timestamp, isUser }) => (
-  <div className={`flex mb-4 ${isUser ? "justify-end" : "justify-start"}`}>
-    <div
-      className={`max-w-md px-4 py-3 rounded-2xl ${
-        isUser ? "bg-[#0A4D68] text-white rounded-br-md" : "bg-gray-100 text-gray-800 rounded-bl-md"
-      }`}
-    >
-      <p className="text-sm whitespace-pre-wrap break-words">{content}</p>
-      <p className={`text-xs mt-1 ${isUser ? "text-[#a7d0e8]" : "text-gray-500"}`}>{timestamp}</p>
-    </div>
-  </div>
-);
-
-/* Typing indicator */
-const TypingIndicator = () => (
-  <div className="flex items-center gap-2 mb-4">
-    <div className="bg-gray-100 rounded-2xl px-4 py-3 max-w-xs">
-      <div className="flex items-center gap-1">
-        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150" />
-        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-300" />
-      </div>
-    </div>
-  </div>
-);
-
-/* Input area with file upload and send */
-const MessageInput = ({ value, onChange, onSend, onFileUpload }) => {
-  const fileInputRef = useRef(null);
-
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      onSend();
-    }
-  };
-
-  return (
-    <div className="bg-white border-t border-gray-200 p-4">
-      <div className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3">
-        <button className="text-gray-400 hover:text-gray-600" onClick={() => fileInputRef.current.click()}>
-          <Paperclip className="w-5 h-5" />
-          <input ref={fileInputRef} type="file" className="hidden" onChange={onFileUpload} />
-        </button>
-
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Message..."
-          className="flex-1 bg-transparent outline-none text-gray-800 placeholder-gray-500"
-        />
-
-        <button className="text-gray-400 hover:text-gray-600">
-          <Mic className="w-5 h-5" />
-        </button>
-
-        <button onClick={onSend} className="bg-[#0A4D68] hover:bg-[#083952] text-white rounded-full p-2">
-          <Send className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  );
-};
-
-/* Chat interface: messages, send, upload */
-const ChatInterface = ({ patientId, activeConversation, onSaveConversation }) => {
-  const initialMessages = activeConversation?.messages || [
-    {
-      id: "system-1",
-      content: "Hi there! I'm your medical assistant. How can I help you today?",
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      isUser: false,
-    },
-  ];
-
-  const [messages, setMessages] = useState(initialMessages);
-  const [inputValue, setInputValue] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef(null);
-  const API_BASE = import.meta.env.VITE_BACKEND_URL;
-
-  useEffect(() => {
-    setMessages(activeConversation?.messages || initialMessages);
-    setInputValue("");
-  }, [activeConversation]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const handleSendMessage = async () => {
-    const text = inputValue.trim();
-    if (!text) return;
-
-    if (!patientId) {
-      const systemMsg = {
-        id: Date.now().toString(),
-        content: "Please login to start a chat.",
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        isUser: false,
-      };
-      setMessages((prev) => [...prev, systemMsg]);
-      setInputValue("");
-      return;
-    }
-
-    const userMsg = {
-      id: Date.now().toString(),
-      content: text,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      isUser: true,
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    setInputValue("");
-    setIsTyping(true);
-
-    try {
-      const resp = await axios.post(
-        `${API_BASE}/api/chat`,
-        { patientId, message: text },
-        { headers: { "Content-Type": "application/json" }, withCredentials: true }
-      );
-
-      const aiText = resp.data?.answer || "No response from assistant.";
-      const sources = resp.data?.sources || [];
-
-      const aiReply = {
-        id: (Date.now() + 1).toString(),
-        content: aiText,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        isUser: false,
-        sources,
-      };
-
-      setMessages((prev) => {
-        const next = [...prev, aiReply];
-        if (onSaveConversation && patientId) {
-          const convId = activeConversation?.id || `conv_${Date.now()}`;
-          onSaveConversation({
-            id: convId,
-            title: next.find((m) => !m.isUser)?.content?.slice(0, 40) || "Chat",
-            lastMessage: aiText,
-            timestamp: Date.now(),
-            messages: next,
-          });
-        }
-        return next;
-      });
-    } catch (error) {
-      const errReply = {
-        id: (Date.now() + 2).toString(),
-        content: "Sorry, I couldn't reach the assistant. Please try again later.",
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        isUser: false,
-      };
-      setMessages((prev) => [...prev, errReply]);
-    } finally {
-      setIsTyping(false);
-    }
-  };
-
-  const handleFileUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const fileMsg = {
-      id: Date.now().toString(),
-      content: `📎 File uploaded: ${file.name}`,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      isUser: true,
-    };
-    setMessages((prev) => [...prev, fileMsg]);
-  };
-
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4">
-        {messages.map((msg) => (
-          <div key={msg.id} className={`flex mb-4 ${msg.isUser ? "justify-end" : "justify-start"}`}>
-            <div
-              className={`max-w-md px-4 py-3 rounded-2xl ${
-                msg.isUser ? "bg-[#0A4D68] text-white rounded-br-md" : "bg-gray-100 text-gray-800 rounded-bl-md"
-              }`}
-            >
-              <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
-              <p className={`text-xs mt-1 ${msg.isUser ? "text-[#a7d0e8]" : "text-gray-500"}`}>{msg.timestamp}</p>
-              {msg.sources && msg.sources.length > 0 && <div className="mt-2 text-xs text-gray-500">Sources: {msg.sources.join(", ")}</div>}
-            </div>
-          </div>
-        ))}
-        {isTyping && <TypingIndicator />}
-        <div ref={messagesEndRef} />
-      </div>
-
-      <MessageInput value={inputValue} onChange={setInputValue} onSend={handleSendMessage} onFileUpload={handleFileUpload} />
-    </div>
-  );
-};
+import Chatpage2 from "./Chatpage2";
 
 /* Sidebar with recent chats */
 const Sidebar = ({ histories, onSelect, onStartNew }) => (
@@ -341,7 +141,7 @@ const ChatPage = () => {
             </div>
           ) : (
             <div className="w-full bg-white">
-              <ChatInterface key={newChatKey} patientId={patientId} activeConversation={activeConversation} onSaveConversation={onSaveConversation} />
+              <Chatpage2 key={newChatKey} patientId={patientId} activeConversation={activeConversation} onSaveConversation={onSaveConversation} />
             </div>
           )}
         </div>
@@ -351,7 +151,7 @@ const ChatPage = () => {
             <Sidebar histories={histories} onSelect={(h) => setActiveConversation(h)} onStartNew={onStartNew} />
           </div>
           <div className="flex-1 bg-white">
-            <ChatInterface key={newChatKey} patientId={patientId} activeConversation={activeConversation} onSaveConversation={onSaveConversation} />
+            <Chatpage2 key={newChatKey} patientId={patientId} activeConversation={activeConversation} onSaveConversation={onSaveConversation} />
           </div>
         </div>
       </div>

@@ -2,6 +2,72 @@
 const axios = require("axios");
 const Chat = require("../models/Chat");
 const Patient = require("../models/Patient");
+const FormData = require('form-data');
+
+const chatWithVoice = async (req, res) => {
+  try {
+    const { patientId } = req.body;
+    const audioFile = req.file;
+
+    if (!patientId || !audioFile) {
+      return res.status(400).json({ message: "patientId and audio file are required" });
+    }
+
+    // verify patient exists
+    const patient = await Patient.findById(patientId);
+    if (!patient) {
+      return res.status(404).json({ message: "Patient not found" });
+    }
+
+    const formData = new FormData();
+    formData.append("audio", audioFile.buffer, {
+      filename: audioFile.originalname || "voice-message.webm",
+      contentType: audioFile.mimetype || "audio/webm", // <-- crucial
+    });
+    formData.append("patientId", patientId);
+
+    // ✅ Post to FastAPI
+    const flaskBase = process.env.CHATBOT_URL;
+    const response = await axios.post(`${flaskBase}/chat/voice`, formData, {
+      headers: {
+        ...formData.getHeaders(),
+        Accept: "application/json",
+      },
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+    });
+
+    const { transcription, answer, lang_detected } = response.data;
+
+    // Save transcription as patient message
+    await Chat.create({
+      patient: patient._id,
+      role: "patient",
+      message: `🎤 Voice: ${transcription}`,
+    });
+
+    // Save AI response
+    await Chat.create({
+      patient: patient._id,
+      role: "ai",
+      message: answer,
+    });
+
+    return res.status(200).json({
+      transcription,
+      answer,
+      lang_detected,
+      success: true,
+    });
+  } catch (error) {
+    console.error("Error processing voice chat:", error?.response?.data || error.message || error);
+    return res.status(500).json({
+      message: "Voice processing error",
+      error: error?.response?.data || error?.message || String(error),
+    });
+  }
+};
+
 
 const chatWithFlaskAI = async (req, res) => {
   try {
@@ -81,4 +147,4 @@ const deleteChatsForPatient = async (req, res) => {
   }
 };
 
-module.exports = { chatWithFlaskAI, deleteChatsForPatient };
+module.exports = { chatWithFlaskAI, deleteChatsForPatient, chatWithVoice };
