@@ -7,14 +7,6 @@ import TopIcons from "../../components/TopIcons";
 import axios from "axios";
 import { API_BASE_URL } from "../../lib/config";
 
-// Helper to calculate age from DOB
-const calculateAge = (dob) => {
-  if (!dob) return "-";
-  const birthDate = new Date(dob);
-  const ageDiff = Date.now() - birthDate.getTime();
-  return Math.floor(ageDiff / (1000 * 60 * 60 * 24 * 365.25));
-};
-
 const DoctorAppointmentsPage = () => {
   const [selectedTab, setSelectedTab] = useState("Upcoming");
   const [appointments, setAppointments] = useState([]);
@@ -24,7 +16,7 @@ const DoctorAppointmentsPage = () => {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("doctorToken");
 
         const res = await axios.get(
           `${API_BASE_URL}/api/appointments/doctor`,
@@ -34,10 +26,14 @@ const DoctorAppointmentsPage = () => {
             },
           }
         );
-
         const enrichedAppointments = (res.data || []).map((appt) => ({
           ...appt,
-          patientAge: calculateAge(appt.patient?.dob),
+          age: appt.patientInfo?.age || "-",
+          name: appt.patientInfo?.name || "N/A",
+          gender: appt.patientInfo?.gender || "N/A",
+          phone: appt.patientInfo?.phone || appt.patient?.phone || "N/A",
+          note: appt.patientInfo?.note || "",
+          reason: appt.reason || "Not specified"
         }));
 
         setAppointments(enrichedAppointments);

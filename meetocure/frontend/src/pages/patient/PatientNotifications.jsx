@@ -246,7 +246,8 @@ const formatRelative = (isoStr) => {
     if (hrs < 24) return `${hrs}h ago`;
     const days = Math.floor(hrs / 24);
     return days === 1 ? "1 day ago" : `${days} days ago`;
-  } catch (_) {
+  // eslint-disable-next-line no-unused-vars
+  } catch (err) {
     return "";
   }
 };

@@ -150,12 +150,12 @@ const bookAppointment = async (req, res) => {
 // Doctor views all appointment requests
 const getDoctorAppointments = async (req, res) => {
   try {
-    const doctorId = req.user.id; // Use authenticated doctor's ID
+    const doctorId = req.user.id;
     const appointments = await Appointment.find({ doctor: doctorId })
       .populate("patient", "name gender dob phone")
       .sort({ date: 1 });
 
-    res.json(appointments); // No need to wrap in { appointments } unless you're consistent
+    res.json(appointments)
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

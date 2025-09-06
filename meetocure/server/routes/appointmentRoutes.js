@@ -26,7 +26,7 @@ router.post("/search/:doctorId", async (req, res) => {
       days: { $elemMatch: { date: date } } // fetch only matching date
     }, { 
       days: { $elemMatch: { date: date } } // only return the matched date in the days array
-    }).populate("doctor", "fullName email primarySpecialization");
+    }).populate("doctor");
 
     res.json({ success: true, data: doctorsAvailable });
   } catch (err) {
@@ -40,7 +40,7 @@ router.post("/", bookAppointment);
 //Patient views their own appointments 
 router.get("/my", protect(["patient"]), getPatientAppointments);
 
-//Doctor views all their appointments
+//Doctor views all their appointments -- Done
 router.get("/doctor", protect(["doctor"]), getDoctorAppointments);
 
 //Doctor updates appointment status 

@@ -29,7 +29,7 @@ def detect_language(text: str) -> str:
             return "te"
     return "en"
 
-@app.post("/ask")
+@app.post("/chat/voice")
 def ask_question(payload: Question):
     try:
         # Auto-detect lang from question

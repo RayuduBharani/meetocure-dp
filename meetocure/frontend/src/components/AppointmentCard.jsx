@@ -14,6 +14,8 @@ const AppointmentCard = ({ appt }) => {
 
   const patient = appt.patientInfo || {};
   const age = patient.age || "-";
+  
+  const defaultImage = "https://e7.pngegg.com/pngimages/709/489/png-clipart-computer-icons-physician-desktop-patient-home-monitoring-logo-monochrome.png";
 
   return (
     <div className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300 p-6 w-full">
@@ -32,7 +34,7 @@ const AppointmentCard = ({ appt }) => {
       {/* Patient Info */}
       <div className="flex gap-6 items-start bg-[#F9FAFB] rounded-xl p-4 shadow-sm mb-5">
         <img
-          src={"/assets/patient_default.png"} // Optional: store photo separately if needed
+          src={defaultImage}
           alt={patient.name || "Patient"}
           className="w-20 h-20 rounded-xl object-cover border shadow-sm"
         />
@@ -52,6 +54,9 @@ const AppointmentCard = ({ appt }) => {
               Phone: {patient.phone}
             </p>
           </div>
+          <p className="mt-2 text-sm text-[#0A4D68] bg-[#E5F0F5] px-3 py-1 rounded-full inline-block">
+            Reason: {appt.reason || "Not specified"}
+          </p>
         </div>
       </div>
 

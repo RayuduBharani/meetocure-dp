@@ -77,7 +77,7 @@ uvicorn main:app --reload
 
 3) Frontend (Vite + React)
 ```bash
-cd meetocure/frontend-ankit
+cd meetocure/frontend
 npm install
 npm run dev
 ```

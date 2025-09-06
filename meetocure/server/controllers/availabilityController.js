@@ -64,6 +64,7 @@ const getAvailability = async (req, res) => {
   console.log("testing the get avilability");
   try {
     const doctorId = req.params.doctorId;
+    console.log(doctorId);
 
     const availability = await Availability.findOne({ doctor: doctorId });
 
@@ -97,7 +98,7 @@ const deleteAvailabilityDate = async (req, res) => {
 // New: update slots for a specific date (create if missing)
 const updateAvailabilityDate = async (req, res) => {
   try {
-    const doctorId = req.user?.doctorId || req.user?.id || req.user?._id;
+    const doctorId = req.user?.doctorId;
     const { date } = req.params;
     const { slots } = req.body;
 

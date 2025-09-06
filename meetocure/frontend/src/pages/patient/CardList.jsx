@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Card from './Card';
 import HospitalCard from './doctorspages/HospitalCard-hos';
 
+// eslint-disable-next-line no-unused-vars
 const CardList = ({ title, data, type, seeAllLink }) => {
     const initialVisibleCount = 4; // Show 4 cards initially for a better look
     const itemsToShow = data.slice(0, initialVisibleCount);

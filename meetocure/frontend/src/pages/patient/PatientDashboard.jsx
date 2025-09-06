@@ -19,12 +19,9 @@ const PatientDashboard = () => {
   const routerLocation = useRouterLocation();
 
   const [city, setCity] = useState("Vijayawada");
-  const [doctors, setDoctors] = useState([]);  // ✅ doctors from backend
-  const [hospitals, setHospitals] = useState([]);
+  const [doctors, setDoctors] = useState([]); 
   const [loadingDoctors, setLoadingDoctors] = useState(false);
-  const [loadingHospitals, setLoadingHospitals] = useState(false);
   const [errorDoctors, setErrorDoctors] = useState(null);
-  const [errorHospitals, setErrorHospitals] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [filteredDoctors, setFilteredDoctors] = useState([]);
   const [filteredHospitals, setFilteredHospitals] = useState([]);
@@ -116,7 +113,7 @@ const PatientDashboard = () => {
   .get(`${import.meta.env.VITE_BACKEND_URL}/api/doctor`)
   .then((res) => {
     const mappedDoctors = res.data.map((doc) => ({
-      id: doc._id,
+      id: doc.doctorId,
       fullName: doc.fullName,
       primarySpecialization: doc.primarySpecialization || doc.specialization,
       category: doc.category,

@@ -8,6 +8,7 @@ const chatWithVoice = async (req, res) => {
   try {
     const { patientId } = req.body;
     const audioFile = req.file;
+    console.log("Received voice " , { patientId, audioFile });
 
     if (!patientId || !audioFile) {
       return res.status(400).json({ message: "patientId and audio file are required" });

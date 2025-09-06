@@ -46,7 +46,7 @@ router.put("/profile", protect("doctor"), doctorController.updateDoctorProfile);
 router.get("/:id", async (req, res) => {
   try {
     const doctorId = req.params.id;
-    const doctor = await DoctorVerificationShema.findById(doctorId);
+    const doctor = await DoctorVerificationShema.findOne({doctorId:doctorId});
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
     res.status(200).json(doctor);
   } catch (error) {

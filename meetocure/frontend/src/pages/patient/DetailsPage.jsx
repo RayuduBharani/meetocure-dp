@@ -149,7 +149,7 @@ const DetailsPage = () => {
           <div className="text-xl font-bold">₹ 250</div>
         </div>
         <button
-          onClick={() => navigate(`/patient/appointments/datetime?doctorId=${doctor._id}`)}
+          onClick={() => navigate(`/patient/appointments/datetime?doctorId=${doctor.doctorId}`)}
           className="bg-cyan-800 px-6 py-3 rounded-lg font-medium hover:bg-cyan-700 transition"
         >
           <FaCalendarAlt className="inline-block mr-2" />
