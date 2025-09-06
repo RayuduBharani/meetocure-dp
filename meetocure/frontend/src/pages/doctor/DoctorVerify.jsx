@@ -97,7 +97,7 @@ const DoctorVerify = () => {
       } else if (res.data.registrationStatus === "pending_verification" || res.data.doctor?.registrationStatus === "pending_verification") {
         const doctorId = res.data.doctorId || res.data.doctor?.doctorId;
         toast.dismiss(loadingToast);
-        navigate(`/doctor-verification/?doctorId=${doctorId}`);
+        navigate(`/hospitalform/?doctorId=${doctorId}`);
       }
     } catch (err) {
       toast.dismiss(loadingToast);

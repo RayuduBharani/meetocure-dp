@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import TopIcons from "../../../components/PatientTopIcons";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import ConfirmationModal from "../../../components/ConfirmationModal";
+import { toast } from "react-hot-toast";
 
 const upiOptions = [
   { name: "Google Pay", icon: "/assets/payments/gpay.png" },
@@ -44,7 +45,7 @@ const Payment = () => {
       setTimeout(() => {
         navigate("/patient-dashboard");
       }, 1500);
-    } catch (err) {
+    } catch {
       dismissLoading(loadingKey);
       error("Payment failed. Please try again.");
     }
