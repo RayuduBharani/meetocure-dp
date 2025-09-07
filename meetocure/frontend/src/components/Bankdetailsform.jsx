@@ -7,11 +7,6 @@ const App = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log({
-      accountNumber,
-      ifscCode,
-      accountHolderName,
-    });
     alert('Form submitted! Check the console for data.');
   };
 

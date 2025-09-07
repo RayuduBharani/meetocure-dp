@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HeroCarousel from "../../components/HeroBanners";
 import TodayAppointments from "../../components/TodayAppointments";
@@ -6,6 +6,7 @@ import SidebarNav from "../../components/SidebarNav";
 import BottomNav from "../../components/BottomNav";
 import TopIcons from "../../components/TopIcons"; 
 import { FaCalendarAlt, FaChartBar, FaHome, FaRegCalendarCheck, FaUser } from "react-icons/fa";
+import { getDoctorStats } from "../../lib/doctorApi";
 const navItems = [
   { icon: <FaChartBar />, label: "Stats", path: "/doctor/stats" },
   { icon: <FaCalendarAlt />, label: "Availability", path: "/doctor/availability" },
@@ -15,6 +16,36 @@ const navItems = [
 ];
 const DoctorDashboard = () => {
   const navigate = useNavigate();
+  const [stats, setStats] = useState({
+    todayAppointments: 0,
+    pendingAppointments: 0,
+    earnings: 0,
+    uniquePatients: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch doctor stats
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const statsData = await getDoctorStats();
+      setStats(statsData);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+      setError('Failed to load statistics');
+      // Set default values on error
+      setStats({
+        todayAppointments: 0,
+        pendingAppointments: 0,
+        earnings: 0,
+        uniquePatients: 0
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Check authentication on component mount
   useEffect(() => {
@@ -40,6 +71,9 @@ const DoctorDashboard = () => {
       navigate('/doctor-verify');
       return;
     }
+
+    // Fetch stats after authentication check
+    fetchStats();
   }, [navigate]);
 
   return (
@@ -96,15 +130,39 @@ const DoctorDashboard = () => {
 
         {/* Stats Cards Row 1 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <StatCard title="Appointments" value="30" />
-          <StatCard title="Pending Appt" value="5" />
+          <StatCard 
+            title="Appointments" 
+            value={loading ? "..." : stats.todayAppointments} 
+            loading={loading}
+          />
+          <StatCard 
+            title="Pending Appt" 
+            value={loading ? "..." : stats.pendingAppointments} 
+            loading={loading}
+          />
         </div>
 
         {/* Stats Cards Row 2 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
-          <StatCard title="Earnings" value="₹3000" prefix="Earned : " />
-          <StatCard title="Patients" value="30" />
+          <StatCard 
+            title="Earnings" 
+            value={loading ? "..." : `₹${stats.earnings}`} 
+            prefix="Earned : " 
+            loading={loading}
+          />
+          <StatCard 
+            title="Patients" 
+            value={loading ? "..." : stats.uniquePatients} 
+            loading={loading}
+          />
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
       </div>
 
       {/* Mobile Bottom Nav */}
@@ -116,15 +174,21 @@ const DoctorDashboard = () => {
 };
 
 // Reusable stat card
-const StatCard = ({ title, value, prefix = "Count : " }) => (
+const StatCard = ({ title, value, prefix = "Count : ", loading = false }) => (
   <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition p-6 text-center border border-gray-100">
     <p className="text-xs text-gray-400 mb-1">Today</p>
     <h3 className="font-semibold text-lg text-[#1F2A37] border-b pb-2 mb-3">
       {title}
     </h3>
     <p className="text-[#0A4D68] text-xl font-bold">
-      {prefix}
-      {value}
+      {loading ? (
+        <span className="animate-pulse">Loading...</span>
+      ) : (
+        <>
+          {prefix}
+          {value}
+        </>
+      )}
     </p>
   </div>
 );

@@ -120,7 +120,7 @@ const BankingInformation = () => {
       }
       
       // Filter out file-related fields that shouldn't be sent as form data
-      const fileFields = ['profileImage', 'identityDocument', 'medicalCouncilCertificate', 'digitalSignatureCertificate', 'qualificationCertificates'];
+      const fileFields = ['profileImage', 'identityDocument', 'medicalCouncilCertificate', 'qualificationCertificates'];
       const filteredDoctorInfo = Object.fromEntries(
         Object.entries(doctorInfo).filter(([key]) => !fileFields.includes(key))
       );
@@ -146,7 +146,6 @@ const BankingInformation = () => {
       actualFiles.profileImage && formDataToSend.append('profileImage', actualFiles.profileImage);
       actualFiles.identityDocument && formDataToSend.append('identityDocument', actualFiles.identityDocument);
       actualFiles.medicalCouncilCertificate && formDataToSend.append('medicalCouncilCertificate', actualFiles.medicalCouncilCertificate);
-      actualFiles.digitalSignature && formDataToSend.append('digitalSignatureCertificate', actualFiles.digitalSignature);
       
       if (actualFiles.qualificationCertificates && actualFiles.qualificationCertificates.length > 0) {
         console.log('Adding qualification certificates:', actualFiles.qualificationCertificates.length);

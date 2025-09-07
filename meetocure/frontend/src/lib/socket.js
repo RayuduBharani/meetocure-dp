@@ -22,7 +22,6 @@ socket.on('connect_error', (error) => {
   console.error('Socket connection error:', error);
   // Attempt to reconnect with polling if WebSocket fails
   if (socket.io.opts.transports.includes('websocket')) {
-    console.log('Falling back to polling transport');
     socket.io.opts.transports = ['polling'];
   }
 });

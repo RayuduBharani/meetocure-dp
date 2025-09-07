@@ -68,7 +68,6 @@ const verifyDoctor = async (req, res) => {
     // Parse JSON fields that might be sent as strings (e.g., arrays or objects)
     try {
       if (typeof data.qualifications === 'string') data.qualifications = JSON.parse(data.qualifications);
-      if (typeof data.clinicHospitalAffiliations === 'string') data.clinicHospitalAffiliations = JSON.parse(data.clinicHospitalAffiliations);
       if (typeof data.qualificationCertificates === 'string') data.qualificationCertificates = JSON.parse(data.qualificationCertificates);
       if (typeof data.location === 'string') data.location = JSON.parse(data.location);
     } catch (parseErr) {
@@ -108,16 +107,10 @@ const verifyDoctor = async (req, res) => {
         data.qualificationCertificates = certUrls;
       }
 
-      // digitalSignatureCertificate
-      if (req.files.digitalSignatureCertificate && req.files.digitalSignatureCertificate[0]) {
-        const file = req.files.digitalSignatureCertificate[0];
-        const url = await uploadBufferToCloudinary(file.buffer, 'doctor_verifications', `dsig_${doctorId}`);
-        data.digitalSignatureCertificate = url;
-      }
     }
 
     // Clean up any array fields that might have been sent incorrectly
-    const fileFields = ['profileImage', 'identityDocument', 'medicalCouncilCertificate', 'digitalSignatureCertificate'];
+    const fileFields = ['profileImage', 'identityDocument', 'medicalCouncilCertificate'];
     fileFields.forEach(field => {
       if (Array.isArray(data[field])) {
         console.log(`Cleaning up array field ${field}:`, data[field]);
@@ -129,7 +122,6 @@ const verifyDoctor = async (req, res) => {
     if (!data.profileImage) return res.status(400).json({ message: "Profile image is required" });
     if (!data.identityDocument) return res.status(400).json({ message: "Aadhaar image (identityDocument) is required" });
     if (!data.medicalCouncilCertificate) return res.status(400).json({ message: "Medical council certificate image is required" });
-    if (!data.digitalSignatureCertificate) return res.status(400).json({ message: "Digital signature certificate image is required" });
     if (!Array.isArray(data.qualificationCertificates) || data.qualificationCertificates.length === 0) {
       return res.status(400).json({ message: "At least one qualification certificate image is required" });
     }

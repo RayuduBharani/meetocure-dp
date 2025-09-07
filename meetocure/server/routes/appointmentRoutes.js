@@ -8,6 +8,7 @@ const {
   updateAppointmentStatus,
   cancelAppointment,
   getPatientAppointments,
+  createTestAppointment,
 } = require("../controllers/appointmentController");
 const Availability = require("../models/Availability");
 
@@ -49,5 +50,8 @@ router.put("/:id/status", protect(["doctor"]), updateAppointmentStatus);
 
 //Doctor cancels appointment
 router.put("/:id/cancel", protect(["doctor"]), cancelAppointment);
+
+// Test endpoint to create a test appointment
+router.post("/test", protect(["doctor"]), createTestAppointment);
 
 module.exports = router;

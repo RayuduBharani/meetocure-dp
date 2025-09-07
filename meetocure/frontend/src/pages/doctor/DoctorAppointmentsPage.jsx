@@ -48,9 +48,21 @@ const DoctorAppointmentsPage = () => {
     fetchAppointments();
   }, []);
 
-  const filteredAppointments = appointments.filter(
-    (appt) => appt.status === selectedTab
-  );
+  const filteredAppointments = appointments.filter((appt) => {
+    const today = new Date().toISOString().split('T')[0];
+    const appointmentDate = appt.date;
+    
+    switch (selectedTab) {
+      case "Upcoming":
+        return appt.status === "Upcoming" && appointmentDate >= today;
+      case "Completed":
+        return appt.status === "Completed";
+      case "Cancelled":
+        return appt.status === "Cancelled";
+      default:
+        return true;
+    }
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] to-[#ECF3F9] px-6 py-8 md:px-12 text-[#1F2A37] font-poppins">

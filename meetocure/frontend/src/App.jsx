@@ -56,6 +56,7 @@ import PatientPublicForm from "./pages/patient/PatientEnquery/PatientPublicForm"
 import PatientSos from "./pages/patient/SOS/PatientSos";
 import SendNotification from './components/SendNotification.jsx';
 import NotificationsList from './components/NotificationList.jsx';
+import ProfileView from "./pages/doctor/profile/profileView";
 
 
 import { GoogleMapsProvider } from './contexts/GoogleMapsContext';
@@ -82,6 +83,7 @@ function App() {
         <Route path="/doctor/availability/change/:date" element={<ChangeAvailability />} />
         <Route path="/doctor/availability/add" element={<AddAvailability />} />
         <Route path="/doctor/profile" element={<DoctorProfilePage />} />
+        <Route path="/doctor/profile-view" element={<ProfileView />} />
         <Route path="/doctor/profile/edit" element={<EditProfile />} />
         <Route path="/doctor/notifications" element={<Notifications />} />
         <Route path="/doctor/ai-chat" element={<ChatAI />} />

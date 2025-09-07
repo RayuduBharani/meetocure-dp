@@ -28,7 +28,6 @@ router.post(
 		{ name: 'identityDocument', maxCount: 1 },
 		{ name: 'medicalCouncilCertificate', maxCount: 1 },
 		{ name: 'qualificationCertificates', maxCount: 10 },
-		{ name: 'digitalSignatureCertificate', maxCount: 1 }, // added: accept digital signature image
 	]),
 	verifyDoctor
 );

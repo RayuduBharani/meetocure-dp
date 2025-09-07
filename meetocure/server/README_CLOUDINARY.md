@@ -10,7 +10,6 @@ POST /api/doctor/verify-doctor?doctorId=<doctorId>
 Fields accepted:
 - fullName, gender, dateOfBirth, medicalCouncilRegistrationNumber, ... (form fields)
 - qualifications (stringified JSON array)
-- clinicHospitalAffiliations (stringified JSON array)
 
 Files accepted:
 - profileImage (single)

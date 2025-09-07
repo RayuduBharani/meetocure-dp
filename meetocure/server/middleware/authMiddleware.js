@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const DoctorVerificationShema = require("../models/DoctorVerificationShema");
 const Doctor = require("../models/DoctorShema");
 const Patient = require("../models/Patient");
+const User = require("../models/User");
 
 const protect = (roles = []) => {
 
@@ -19,9 +20,14 @@ const protect = (roles = []) => {
       let role = decoded.role;
 
       if (role === "doctor") {
+        // Try multiple models to find the doctor
         user = await DoctorVerificationShema.findOne({ doctorId: decoded.id });
         if (!user) {
           user = await Doctor.findById(decoded.id);
+        }
+        if (!user) {
+          // Also check User model for doctors
+          user = await User.findOne({ _id: decoded.id, role: "doctor" });
         }
         // Set the doctorId for easy access in controllers
         if (user) {
@@ -29,6 +35,10 @@ const protect = (roles = []) => {
         }
       } else if (role === "patient") {
         user = await Patient.findById(decoded.id);
+        if (!user) {
+          // Also check User model for patients
+          user = await User.findOne({ _id: decoded.id, role: "patient" });
+        }
       }
 
       if (!user) {

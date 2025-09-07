@@ -93,7 +93,6 @@ const DoctorVerificationShema = require("../models/DoctorVerificationShema");
 //testing 
 const bookAppointment = async (req, res) => {
   try {
-    console.log("Incoming Body:", req.body);
 
     const {
       patient,       // ObjectId of patient
@@ -132,7 +131,6 @@ const bookAppointment = async (req, res) => {
     // ✅ Save to DB
     await appointment.save();
 
-    console.log("Appointment booked:", appointment);
     res.status(201).json({
       success: true,
       message: "Appointment booked successfully",
@@ -150,28 +148,51 @@ const bookAppointment = async (req, res) => {
 // Doctor views all appointment requests
 const getDoctorAppointments = async (req, res) => {
   try {
+   
     // Get doctor ID from the user object
     let doctorId;
     if (req.user.doctorId) {
       doctorId = req.user.doctorId;
     } else if (req.user._id) {
       doctorId = req.user._id;
+    } else if (req.user.id) {
+      doctorId = req.user.id;
     } else {
       return res.status(400).json({ message: "Doctor ID not found" });
     }
 
-    // Get today's and tomorrow's dates in YYYY-MM-DD format
+
+    // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
-    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     
+    
+    // First, let's check ALL appointments to see what's in the database
+    const allAppointments = await Appointment.find({}).populate("patient", "name gender dob phone");
+   
+    // Try to find appointments with the doctor ID
     const appointments = await Appointment.find({ 
-      doctor: doctorId,
-      date: { $in: [today, tomorrow] }  // Filter by today's and tomorrow's dates
+      doctor: doctorId
     })
       .populate("patient", "name gender dob phone")
       .sort({ date: 1, time: 1 }); // Sort by date first, then time
+    // If no appointments found, also check if there are any appointments without a doctor assigned
+    // This might be the case for new appointments
+    if (appointments.length === 0) {
+      const unassignedAppointments = await Appointment.find({ 
+        doctor: null
+      })
+        .populate("patient", "name gender dob phone")
+        .sort({ date: 1, time: 1 });
 
-    res.json(appointments)
+      // Also check for appointments with any doctor
+      const anyDoctorAppointments = await Appointment.find({})
+        .populate("patient", "name gender dob phone")
+        .sort({ date: 1, time: 1 });
+    
+      return res.json(unassignedAppointments);
+    }
+
+    res.json(appointments);
   } catch (err) {
     console.error("Error fetching doctor appointments:", err);
     res.status(500).json({ message: err.message });
@@ -231,14 +252,6 @@ const cancelAppointment = async (req, res) => {
         message: "Appointment not found" 
       });
     }
-
-    console.log('Appointment found:', {
-      appointmentId: appointment._id,
-      appointmentDoctor: appointment.doctor,
-      appointmentDoctorString: appointment.doctor.toString(),
-      doctorIdString: doctorId.toString()
-    });
-
     // Check if the doctor is authorized to cancel this appointment
     // Handle both ObjectId and string comparisons
     const appointmentDoctorId = appointment.doctor.toString();
@@ -260,7 +273,6 @@ const cancelAppointment = async (req, res) => {
       });
       
       // Temporary bypass for debugging - remove this in production
-      console.log('TEMPORARY BYPASS: Allowing cancellation for debugging');
       // return res.status(403).json({ 
       //   success: false, 
       //   message: "Not authorized to cancel this appointment" 
@@ -327,10 +339,48 @@ const getPatientAppointments = async (req, res) => {
   }
 };
 
+// Create a test appointment for debugging
+const createTestAppointment = async (req, res) => {
+  try {
+    
+    const today = new Date().toISOString().split('T')[0];
+    const testAppointment = new Appointment({
+      patient: req.user.id || "507f1f77bcf86cd799439011", // Use provided ID or a test ID
+      doctor: req.user.id || "507f1f77bcf86cd799439012", // Use provided ID or a test ID
+      patientInfo: {
+        name: "Test Patient",
+        gender: "male",
+        age: 30,
+        phone: "+91 9876543210",
+        note: "Test appointment for debugging"
+      },
+      date: today,
+      time: "10:00",
+      reason: "Test appointment",
+      status: "Upcoming"
+    });
+
+    await testAppointment.save();
+    
+    res.json({
+      success: true,
+      message: "Test appointment created successfully",
+      appointment: testAppointment
+    });
+  } catch (error) {
+    console.error("Error creating test appointment:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+};
+
 module.exports = {
   bookAppointment,
   getDoctorAppointments,
   updateAppointmentStatus,
   cancelAppointment,
   getPatientAppointments,
+  createTestAppointment,
 };

@@ -11,6 +11,7 @@ import {
   FaQuestionCircle,
   FaFileContract,
   FaSignOutAlt,
+  FaUser,
 } from "react-icons/fa";
 import BottomNav from "../../../components/BottomNav";
 import TopIcons from "../../../components/TopIcons";
@@ -19,6 +20,7 @@ import profileImg from "/assets/doc_profile.png";
 import { motion } from "framer-motion";
 
 const options = [
+  { icon: <FaUser />, label: "View Profile", path: "/doctor/profile-view"},
   { icon: <FaUserEdit />, label: "Edit Profile", path: "/doctor/profile/edit" },
   { icon: <FaNotify />, label: "Notifications", path: "/doctor/notifications" },
   { icon: <FaComments />, label: "Chat with AI", path: "/doctor/ai-chat" },

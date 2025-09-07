@@ -60,16 +60,33 @@ const AppointmentCard = ({ appt }) => {
         </div>
       </div>
 
+      {/* Status */}
+      {appt.status && appt.status !== "Upcoming" && (
+        <div className="mb-4">
+          <p className="text-sm">
+            Status: <span className={`font-medium ${
+              appt.status === "Completed" ? "text-green-500" : 
+              appt.status === "Cancelled" ? "text-red-500" : 
+              "text-yellow-500"
+            }`}>{appt.status}</span>
+          </p>
+        </div>
+      )}
+
       {/* Buttons */}
       <div className="flex gap-5">
-        <button className="w-full bg-gray-100 hover:bg-gray-200 text-sm py-2.5 rounded-full font-medium transition">
-          Cancel
-        </button>
+        {appt.status !== "Cancelled" && (
+          <button className="w-full bg-gray-100 hover:bg-gray-200 text-sm py-2.5 rounded-full font-medium transition">
+            Cancel
+          </button>
+        )}
         <button
           onClick={() =>
             navigate(`/doctor/patient/${appt._id}`, { state: { appt } })
           }
-          className="w-full bg-[#0A4D68] hover:bg-[#083e54] text-white text-sm py-2.5 rounded-full font-medium transition"
+          className={`w-full bg-[#0A4D68] hover:bg-[#083e54] text-white text-sm py-2.5 rounded-full font-medium transition ${
+            appt.status === "Cancelled" ? "w-full" : ""
+          }`}
         >
           View more
         </button>

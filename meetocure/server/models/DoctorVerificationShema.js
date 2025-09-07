@@ -51,16 +51,6 @@ const DoctorVerificationSchema = new mongoose.Schema({
     state: String,
   },
 
-  // Affiliations
-  clinicHospitalAffiliations: [
-    {
-      name: String,
-      city: String,
-      state: String,
-      joinDate: String,
-      designation: String,
-    }
-  ],
 
   // Government IDs
   aadhaarNumber: { type: String, unique: true, sparse: true },
@@ -70,7 +60,6 @@ const DoctorVerificationSchema = new mongoose.Schema({
   profileImage: { type: String, required: true },
   identityDocument: { type: String, required: true },
   medicalCouncilCertificate: { type: String, required: true },
-  digitalSignatureCertificate: { type: String, required: true },
 
   // Hospital Information
   hospitalInfo: [{

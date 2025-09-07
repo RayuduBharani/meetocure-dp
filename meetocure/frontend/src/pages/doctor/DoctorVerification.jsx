@@ -34,20 +34,12 @@ export const DoctorVerification = () => {
       city: "",
       state: ""
     },
-    clinicHospitalAffiliations: [{
-      name: "",
-      city: "",
-      state: "",
-      joinDate: "",
-      designation: ""
-    }],
     aadhaarNumber: "",
     panNumber: "",
     // these will be filled by backend after file upload
     identityDocument: "",
     medicalCouncilCertificate: "",
     qualificationCertificates: [],
-    digitalSignatureCertificate: "",
     profileImage: "",
   });
 
@@ -56,7 +48,6 @@ export const DoctorVerification = () => {
   const [identityDocumentFile, setIdentityDocumentFile] = useState(null); // Aadhaar image
   const [medicalCouncilCertificateFile, setMedicalCouncilCertificateFile] = useState(null);
   const [qualificationCertificateFiles, setQualificationCertificateFiles] = useState([]);
-  const [digitalSignatureFile, setDigitalSignatureFile] = useState(null);
 
   // Check for hospital data on initial load
   useEffect(() => {
@@ -71,12 +62,6 @@ export const DoctorVerification = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // support nested affiliation keys
-    if (name.startsWith("affiliation.")) {
-      const key = name.split(".")[1];
-      setFormData(prev => ({ ...prev, clinicHospitalAffiliations: { ...prev.clinicHospitalAffiliations, [key]: value } }));
-      return;
-    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -109,29 +94,6 @@ export const DoctorVerification = () => {
       qualifications: prev.qualifications.filter((_, i) => i !== index),
     }));
 
-  // handle affiliation changes
-  const handleAffiliationChange = (index, field, value) => {
-    setFormData((prev) => {
-      const affiliations = [...prev.clinicHospitalAffiliations];
-      affiliations[index] = { ...affiliations[index], [field]: value };
-      return { ...prev, clinicHospitalAffiliations: affiliations };
-    });
-  };
-
-  const addAffiliation = () =>
-    setFormData((prev) => ({
-      ...prev,
-      clinicHospitalAffiliations: [
-        ...prev.clinicHospitalAffiliations,
-        { name: "", city: "", state: "", joinDate: "", designation: "" }
-      ],
-    }));
-
-  const removeAffiliation = (index) =>
-    setFormData((prev) => ({
-      ...prev,
-      clinicHospitalAffiliations: prev.clinicHospitalAffiliations.filter((_, i) => i !== index),
-    }));
 
   // handle location changes
   // eslint-disable-next-line no-unused-vars
@@ -153,7 +115,6 @@ export const DoctorVerification = () => {
     if (!profileImageFile) return toast.error("Profile image is required");
     if (!identityDocumentFile) return toast.error("Aadhaar image is required");
     if (!medicalCouncilCertificateFile) return toast.error("Medical council certificate image is required");
-    if (!digitalSignatureFile) return toast.error("Digital signature certificate image is required");
     if (qualificationCertificateFiles.length === 0) return toast.error("At least one qualification certificate image is required");
 
     // Save doctor data and files to localStorage
@@ -163,7 +124,6 @@ export const DoctorVerification = () => {
         profileImage: profileImageFile,
         identityDocument: identityDocumentFile,
         medicalCouncilCertificate: medicalCouncilCertificateFile,
-        digitalSignature: digitalSignatureFile,
         qualificationCertificates: qualificationCertificateFiles
       }
     };
@@ -177,7 +137,6 @@ export const DoctorVerification = () => {
           profileImage: profileImageFile,
           identityDocument: identityDocumentFile,
           medicalCouncilCertificate: medicalCouncilCertificateFile,
-          digitalSignature: digitalSignatureFile,
           qualificationCertificates: qualificationCertificateFiles
         }
       } 
@@ -375,68 +334,6 @@ export const DoctorVerification = () => {
             ))}
           </div>
 
-          {/* Clinic / Hospital Affiliations (dynamic) */}
-          <div>
-            <label className="block text-sm font-semibold mb-1">Clinic / Hospital Affiliations</label>
-            {formData.clinicHospitalAffiliations.map((a, idx) => (
-              <div key={idx} className="mb-3 p-3 border rounded-xl">
-                <input
-                  type="text"
-                  placeholder="Name"
-                  value={a.name}
-                  onChange={(e) => handleAffiliationChange(idx, "name", e.target.value)}
-                  className="w-full mb-2 border border-gray-300 px-3 py-2 rounded"
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    placeholder="City"
-                    value={a.city}
-                    onChange={(e) => handleAffiliationChange(idx, "city", e.target.value)}
-                    className="w-full mb-2 border border-gray-300 px-3 py-2 rounded"
-                  />
-                  <input
-                    type="text"
-                    placeholder="State"
-                    value={a.state}
-                    onChange={(e) => handleAffiliationChange(idx, "state", e.target.value)}
-                    className="w-full mb-2 border border-gray-300 px-3 py-2 rounded"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="date"
-                    placeholder="Start Date"
-                    value={a.startDate}
-                    onChange={(e) => handleAffiliationChange(idx, "startDate", e.target.value)}
-                    className="w-full mb-2 border border-gray-300 px-3 py-2 rounded"
-                  />
-                  <input
-                    type="date"
-                    placeholder="End Date"
-                    value={a.endDate}
-                    onChange={(e) => handleAffiliationChange(idx, "endDate", e.target.value)}
-                    className="w-full mb-2 border border-gray-300 px-3 py-2 rounded"
-                  />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Designation"
-                  value={a.designation}
-                  onChange={(e) => handleAffiliationChange(idx, "designation", e.target.value)}
-                  className="w-full mb-2 border border-gray-300 px-3 py-2 rounded"
-                />
-                <div className="flex gap-2">
-                  {formData.clinicHospitalAffiliations.length > 1 && (
-                    <button type="button" onClick={() => removeAffiliation(idx)} className="text-red-600">Remove</button>
-                  )}
-                  {idx === formData.clinicHospitalAffiliations.length - 1 && (
-                    <button type="button" onClick={addAffiliation} className="text-green-600">Add</button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
 
           {/* Aadhaar */}
           <div>
@@ -484,11 +381,6 @@ export const DoctorVerification = () => {
             <small className="text-gray-500">Upload images (jpg/png/gif) of degree certificates.</small>
           </div>
 
-          {/* Digital Signature Certificate (image) */}
-          <div>
-            <label className="block text-sm font-semibold mb-1">Digital Signature Certificate (Image)</label>
-            <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setDigitalSignatureFile)} required className="w-full border border-gray-300 px-3 py-2 rounded" />
-          </div>
 
           {/* Profile Image */}
           <div>

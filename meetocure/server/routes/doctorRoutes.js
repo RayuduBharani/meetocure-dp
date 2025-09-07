@@ -2,11 +2,10 @@ const express = require("express");
 const router = express.Router();
 const protect = require("../middleware/authMiddleware");
 const doctorController = require("../controllers/doctorController");
-const { getDoctorProfile, updateDoctorProfile } = require("../controllers/doctorController");
+const { getDoctorProfile, updateDoctorProfile, getDoctorStats } = require("../controllers/doctorController");
 const DoctorVerificationShema = require("../models/DoctorVerificationShema");
 
 // Public: list doctors, supports optional filtering via query params
-// Example: GET /api/doctor?category=Cardiology
 router.get("/", async (req, res) => {
   try {
     const { category, search } = req.query;
@@ -40,7 +39,10 @@ router.get("/", async (req, res) => {
 
 // Protected routes for doctor profile management
 router.get("/profile", protect(["doctor"]), getDoctorProfile);
-router.put("/profile", protect("doctor"), doctorController.updateDoctorProfile);
+router.put("/profile", protect(["doctor"]),updateDoctorProfile);
+
+// Doctor dashboard statistics
+router.get("/stats", protect(["doctor"]), getDoctorStats);
 
 // Get doctor by id (keep after other routes)
 router.get("/:id", async (req, res) => {
