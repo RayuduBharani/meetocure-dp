@@ -20,7 +20,7 @@ const doctorSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    registrationStatus: {
+    registrationStatus:{
       type: String,
       enum: [
         "pending_verification", // after OTP, waiting form submission

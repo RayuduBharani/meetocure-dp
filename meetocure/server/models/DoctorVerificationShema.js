@@ -19,20 +19,50 @@ const DoctorVerificationSchema = new mongoose.Schema({
   primarySpecialization: String,
   additionalSpecializations: String,
   category: {
-    type: String,
-    enum: [
-      'Cardiology',
-      'Dentistry',
-      'Pulmonology',
-      'Neurology',
-      'Gastroenterology',
-      'Laboratory',
-      'Vaccination',
-      'General',
-      'Other'
-    ],
-    default: 'General'
-  },
+  type: String,
+  enum: [
+    'Anesthesiology',
+    'Cardiology',
+    'Dermatology',
+    'Dentistry',
+    'Emergency Medicine',
+    'Endocrinology',
+    'Family Medicine',
+    'Gastroenterology',
+    'General Surgery',
+    'Geriatrics',
+    'Gynecology',
+    'Hematology',
+    'Infectious Disease',
+    'Internal Medicine',
+    'Laboratory',
+    'Nephrology',
+    'Neurology',
+    'Neurosurgery',
+    'Obstetrics',
+    'Oncology',
+    'Ophthalmology',
+    'Orthopedics',
+    'Otolaryngology (ENT)',
+    'Pathology',
+    'Pediatrics',
+    'Physical Medicine & Rehabilitation',
+    'Plastic Surgery',
+    'Psychiatry',
+    'Pulmonology',
+    'Radiology',
+    'Rheumatology',
+    'Sports Medicine',
+    'Thoracic Surgery',
+    'Urology',
+    'Vaccination',
+    'Vascular Surgery',
+    'General',
+    'Other'
+  ],
+  default: 'General'
+}
+,
 
   // Education & Experience
   qualifications: [
@@ -77,7 +107,7 @@ const DoctorVerificationSchema = new mongoose.Schema({
     bankBranch: { type: String, required: true },
   }],
 
-  verified: { type: Boolean, default: false },
+  verified: {type: Boolean, default: false},
 }, {
   timestamps: true
 });
