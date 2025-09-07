@@ -8,7 +8,6 @@ import {
   FaVenusMars,
   FaPencilAlt,
 } from "react-icons/fa";
-import profileImg from "/assets/doc_profile.png";
 import TopIcons from "../../../components/PatientTopIcons";
 import axios from "axios";
 import { API_BASE_URL } from "../../../lib/config";
@@ -21,19 +20,17 @@ const PatientEditProfile = () => {
     phone: "",
     dob: "",
     gender: "",
-    photo: profileImg,
+    photoPreview: "profileImg", // preview string
+    photoFile: null, // actual File to upload
   });
-  const [loading, setLoading] = useState(true);
 
-  // Fetch patient profile from backend
+  // Fetch patient profile
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get(`${API_BASE_URL}/api/patient/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        const res = await axios.get(`${API_BASE_URL}/api/patient/profile/get`, {
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         let dob = res.data.dob || "";
@@ -42,18 +39,17 @@ const PatientEditProfile = () => {
           dob = d.toISOString().slice(0, 10);
         }
 
-        setForm({
+        setForm((prev) => ({
+          ...prev,
           name: res.data.name || "",
-          phone: res.data.phone || "",
+          phone: res.data.phone.slice(3) || "",
           dob,
           gender: res.data.gender || "",
-          photo: res.data.photo || profileImg,
-        });
+          photoPreview: res.data.photo || "",
+        }));
       } catch (err) {
         toast.error("Failed to fetch profile");
         console.error(err);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -69,7 +65,7 @@ const PatientEditProfile = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setForm((prev) => ({ ...prev, photo: reader.result }));
+        setForm((prev) => ({ ...prev, photoPreview: reader.result, photoFile: file }));
       };
       reader.readAsDataURL(file);
     }
@@ -85,39 +81,35 @@ const PatientEditProfile = () => {
 
     try {
       const token = localStorage.getItem("token");
-      await axios.put(
-        `${API_BASE_URL}/api/patient/profile`,
-        {
-          name: form.name,
-          phone: form.phone,
-          dob: form.dob,
-          gender: form.gender,
-          photo: form.photo,
+      const data = new FormData();
+      data.append("name", form.name);
+      data.append("phone",`+91${form.phone}`);
+      data.append("dob", form.dob);
+      data.append("gender", form.gender);
+      // if file selected, append file; otherwise append current preview (URL/base64)
+      if (form.photoFile) {
+        data.append("photo", form.photoFile);
+      } else if (form.photoPreview) {
+        data.append("photo", form.photoPreview);
+      }
+
+      await axios.put(`${API_BASE_URL}/api/patient/profile/add`, data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          // Let axios set Content-Type with boundary
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      });
 
       toast.dismiss();
       toast.success("Profile updated successfully!");
       navigate("/patient/profile");
     } catch (err) {
       toast.dismiss();
-      toast.error("Failed to update profile");
+      const msg = err.response?.data?.message || "Failed to update profile";
+      toast.error(msg);
       console.error(err);
     }
   };
-
-  // if (loading) {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center text-lg text-gray-500">
-  //       Loading profile...
-  //     </div>
-  //   );
-  // }
 
   return (
     <div className="min-h-screen bg-[#F9FAFC] font-[Poppins] px-6 pt-6 pb-28">
@@ -139,7 +131,7 @@ const PatientEditProfile = () => {
       <div className="flex flex-col items-center mb-8 relative">
         <div className="rounded-full p-1 bg-white shadow-xl">
           <img
-            src={form.photo}
+            src={form.photoPreview}
             alt="User"
             className="w-36 h-36 object-cover rounded-full border-4 border-white shadow-inner"
           />
@@ -170,7 +162,7 @@ const PatientEditProfile = () => {
             placeholder: "Enter full name",
           },
           {
-            label: "Mobile Number",
+            label: "Mobile Number (+91) [Cannot be changed here]",
             name: "phone",
             icon: <FaPhone className="text-[#0A4D68]" />,
             type: "tel",
@@ -190,6 +182,7 @@ const PatientEditProfile = () => {
             <div className="flex items-center gap-3 border border-[#0A4D68] rounded-lg px-4 py-2 bg-white shadow-sm">
               {icon}
               <input
+              readOnly={name === "phone"}
                 type={type}
                 name={name}
                 value={form[name]}

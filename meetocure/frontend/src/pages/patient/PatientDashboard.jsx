@@ -102,7 +102,6 @@ const PatientDashboard = () => {
 
  useEffect(() => {
     const token = localStorage.getItem("token");
-  console.log("Fetching doctors with token:", token); // Debug log
     if (!token) {
       console.warn("No auth token found. Cannot fetch protected routes.");
       return;
@@ -120,7 +119,6 @@ const PatientDashboard = () => {
       profileImage: doc.profileImage || "/assets/default-doctor.png", // fallback if no photo
     }));
     setDoctors(mappedDoctors);
-    console.log("Mapped doctors:", mappedDoctors);
     setErrorDoctors(null);
   })
   .catch((err) => {

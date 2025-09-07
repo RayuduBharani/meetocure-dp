@@ -5,7 +5,7 @@ const Patient = require("../models/Patient");
 const User = require("../models/User");
 
 const protect = (roles = []) => {
-
+  console.log("working");;
   if (typeof roles === "string") roles = [roles];
   return async (req, res, next) => {
     try {

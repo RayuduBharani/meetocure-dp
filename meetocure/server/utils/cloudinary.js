@@ -7,15 +7,6 @@ cloudinary.config({
   secure: true,
 });
 
-const streamUpload = (buffer, options = {}) => {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
-      if (error) return reject(error);
-      resolve(result);
-    });
-    // streamifier will be used by caller to pipe buffer into stream
-    resolve({ stream }); // caller may use stream directly
-  });
-}
+
 
 module.exports = cloudinary;
