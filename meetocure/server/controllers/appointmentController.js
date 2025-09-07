@@ -3,132 +3,111 @@ const User = require("../models/User");
 const Slot = require("../models/Slot");
 const { createNotification } = require("./notificationController");
 const DoctorVerificationShema = require("../models/DoctorVerificationShema");
-//Book an appointment main
-// const bookAppointment = async (req, res) => {
-//   console.log("bookAppointment called with user:");
-//   try {
-//     const { doctorId, date, time, reason, patientInfo: incomingPatientInfo } = req.body;
-//     console.log("Incoming appointment data:", req.body);
-//     // Validate doctor slot availability
-//     // const slot = await Slot.findOne({ doctor: doctorId, date });
-//     // if (!slot || !slot.availableSlots.includes(time)) {
-//     //   return res.status(400).json({ message: "Selected slot not available" });
-//     // }
+const { uploadBufferToCloudinary } = require("../utils/cloudinary");
 
-//     // Fetch patient from DB to get DOB (to calculate age)
-//     const patientDoc = await DoctorVerificationShema.findById(req.user.id).select("name gender dob phone");
-//     if (!patientDoc) {
-//       return res.status(404).json({ message: "Patient not found" });
-//     }
-
-//     // Calculate age
-//     const age = Math.floor(
-//       (Date.now() - new Date(patientDoc.dob).getTime()) / (1000 * 60 * 60 * 24 * 365.25)
-//     );
-
-//     // Normalize gender to lowercase (to match enum)
-//     const genderNormalized = patientDoc.gender.toLowerCase();
-
-//     // Build patientInfo for Appointment, using incoming mobile if provided or from DB
-//     const patientInfo = {
-//       name: patientDoc.name,
-//       gender: genderNormalized,
-//       age,
-//       phone: patientDoc.phone || (incomingPatientInfo && incomingPatientInfo.phone), // fallback to request data if phone missing in DB
-//       note: incomingPatientInfo?.note || "", // optionally take note from request
-//     };
-
-//     if (!patientInfo.phone) {
-//       return res.status(400).json({ message: "Patient phone number is required" });
-//     }
-
-//     // Create new appointment
-//     const appointment = new Appointment({
-//       patient: req.user.id,
-//       doctor: doctorId,
-//       date,
-//       time,
-//       reason,
-//       status: "Upcoming",
-//       patientInfo,
-//     });
-
-//     await appointment.save();
-
-//     // Remove booked slot from availableSlots and save
-//     slot.availableSlots = slot.availableSlots.filter((t) => t !== time);
-//     await slot.save();
-
-//     // Create notifications for patient and doctor
-//     try {
-//       await createNotification({
-//         user: req.user.id,
-//         title: "Appointment Booked",
-//         message: `Your appointment on ${date} at ${time} is confirmed`,
-//         type: "success",
-//         targetPath: "/patient/calendar", // frontend route for 'Your Appointments'
-//         metadata: { appointmentId: appointment._id, role: "patient" },
-//       });
-//       if (doctorId) {
-//         await createNotification({
-//           user: doctorId,
-//           title: "New Appointment",
-//           message: `${patientInfo.name} booked an appointment on ${date} at ${time}`,
-//           type: "info",
-//           targetPath: "/doctor/appointments",
-//           metadata: { appointmentId: appointment._id, role: "doctor" },
-//         });
-//       }
-//     } catch (e) {
-//       console.warn("Failed to create notifications:", e?.message);
-//     }
-
-//     res.status(201).json({ message: "Appointment booked successfully", appointment });
-//   } catch (err) {
-//     console.error("bookAppointment error:", err);
-//     res.status(500).json({ message: err.message });
-//   }
-// };
-
-//testing 
+// Book appointment
 const bookAppointment = async (req, res) => {
   try {
+    let { patient, doctor, patientInfo, date, time, reason, payment } = req.body;
 
-    const {
-      patient,       // ObjectId of patient
-      doctor,        // ObjectId of doctor
-      patientInfo,   // { name, gender, age, phone, note }
-      date,
-      time,
-      reason,
-    } = req.body;
-
-    // ✅ Validation for required fields
-    if (!patient || !patientInfo || !date || !time) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required fields (patient, patientInfo, date, time)",
-      });
+    // parse patientInfo when sent as JSON string (form-data)
+    if (patientInfo && typeof patientInfo === "string") {
+      try {
+        patientInfo = JSON.parse(patientInfo);
+      } catch (e) {
+        console.warn("Failed to parse patientInfo JSON string:", e.message);
+      }
     }
 
-    if (!patientInfo.name || !patientInfo.gender || !patientInfo.age || !patientInfo.phone) {
-      return res.status(400).json({
-        success: false,
-        message: "Patient info is incomplete",
-      });
+    // If individual fields were sent outside patientInfo (compat), merge them
+    if (!patientInfo) patientInfo = {};
+    if (req.body.blood_group) patientInfo.blood_group = req.body.blood_group;
+    if (req.body.allergies && !Array.isArray(patientInfo.allergies)) {
+      try {
+        patientInfo.allergies = JSON.parse(req.body.allergies);
+      } catch {
+        patientInfo.allergies = req.body.allergies ? req.body.allergies.split(",").map(a => a.trim()).filter(Boolean) : [];
+      }
+    }
+    if (req.body.medical_history_summary && !patientInfo.medical_history_summary) {
+      patientInfo.medical_history_summary = req.body.medical_history_summary;
     }
 
-    // ✅ Create new appointment
-    const appointment = new Appointment({
-      patient,
-      doctor: doctor || null, // doctor is optional
-      patientInfo,
-      date,
-      time,
-      reason: reason || "",
+    if (!patient || !doctor || !date || !time || !patientInfo || !patientInfo.name) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
+    }
+
+    // normalize date to day range to avoid timezone mismatches
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+
+    // Check for existing booking for the same doctor, same date and same time (excluding cancelled)
+    const existing = await Appointment.findOne({
+      doctor,
+      appointment_date: { $gte: dayStart, $lt: dayEnd },
+      appointment_time: time,
+      status: { $ne: "cancelled" },
     });
 
-    // ✅ Save to DB
+    if (existing) {
+      // If the existing booking belongs to the same patient allow (optional), otherwise block
+      if (existing.patient.toString() !== patient.toString()) {
+        return res.status(409).json({
+          success: false,
+          message: "Selected time is already booked for this doctor. Please choose a different slot.",
+          existingAppointmentId: existing._id,
+        });
+      }
+      // if same patient rebooking same slot, allow to continue (or return conflict based on policy)
+    }
+
+    // parse medicalRecordsMeta if provided
+    let metas = [];
+    if (req.body.medicalRecordsMeta) {
+      try {
+        metas = JSON.parse(req.body.medicalRecordsMeta);
+      } catch (e) {
+        console.warn("Failed to parse medicalRecordsMeta:", e.message);
+      }
+    }
+
+    // Handle file uploads
+    let medicalRecords = [];
+    if (req.files && req.files.length > 0) {
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        const filename = `record_${patient}_${Date.now()}_${file.originalname.replace(/\s+/g, "_")}`;
+        const file_url = await uploadBufferToCloudinary(file.buffer, "medical_records", filename);
+
+        // pick meta by index or originalname fallback
+        const meta = metas[i] || metas.find(m => m.originalname === file.originalname) || {};
+        medicalRecords.push({
+          record_type: meta.record_type || "other",
+          file_url,
+          description: meta.description || file.originalname,
+        });
+      }
+    }
+
+    const appointmentDate = new Date(date);
+
+    const appointment = new Appointment({
+      patient,
+      doctor,
+      patientInfo,
+      appointment_date: appointmentDate,
+      appointment_time: time,
+      reason: reason || req.body.reason || "",
+      medicalRecords,
+      payment: payment || {
+        amount: 0,
+        currency: "USD",
+        status: "pending",
+      },
+    });
+
     await appointment.save();
 
     res.status(201).json({
@@ -137,68 +116,79 @@ const bookAppointment = async (req, res) => {
       data: appointment,
     });
   } catch (error) {
-    console.error("Error booking appointment:", error);
-    res.status(500).json({ success: false, message: error.message });
+     if (error.code === 11000) {
+    // Duplicate appointment
+    return res.status(400).json({
+      success: false,
+      message: `This time slot (${req.body.time}) is already booked. Please choose another.`,
+    });
+  }
+  return res.status(500).json({
+    success: false,
+    message: "Something went wrong. Please try again later.",
+  });
   }
 };
-
-
-
 
 // Doctor views all appointment requests
 const getDoctorAppointments = async (req, res) => {
   try {
-   
-    // Get doctor ID from the user object
-    let doctorId;
-    if (req.user.doctorId) {
-      doctorId = req.user.doctorId;
-    } else if (req.user._id) {
-      doctorId = req.user._id;
-    } else if (req.user.id) {
-      doctorId = req.user.id;
-    } else {
-      return res.status(400).json({ message: "Doctor ID not found" });
-    }
+    // Resolve doctorId from token/user
+    let doctorId = req.user?.doctorId || req.user?._id || req.user?.id;
+    if (!doctorId) return res.status(400).json({ message: "Doctor ID not found" });
 
+    // Fetch appointments for this doctor
+    const appointments = await Appointment.find({ doctor: doctorId })
+      .populate("patient", "name")
+      .sort({ appointment_date: 1, appointment_time: 1 });
 
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0];
-    
-    
-    // First, let's check ALL appointments to see what's in the database
-    const allAppointments = await Appointment.find({}).populate("patient", "name gender dob phone");
-   
-    // Try to find appointments with the doctor ID
-    const appointments = await Appointment.find({ 
-      doctor: doctorId
-    })
-      .populate("patient", "name gender dob phone")
-      .sort({ date: 1, time: 1 }); // Sort by date first, then time
-    // If no appointments found, also check if there are any appointments without a doctor assigned
-    // This might be the case for new appointments
-    if (appointments.length === 0) {
-      const unassignedAppointments = await Appointment.find({ 
-        doctor: null
-      })
-        .populate("patient", "name gender dob phone")
-        .sort({ date: 1, time: 1 });
+    // Map to minimal shape required by frontend
+    const minimal = appointments.map((a) => ({
+      _id: a._id,
+      time: a.appointment_time,
+      status: a.status,
+      name: a.patient?.name || (a.patientInfo && a.patientInfo.name) || "—",
+      reason: a.reason || a.patientInfo?.reason || "",
+      date: a.appointment_date, // keep date if frontend needs it for calendar
+    }));
 
-      // Also check for appointments with any doctor
-      const anyDoctorAppointments = await Appointment.find({})
-        .populate("patient", "name gender dob phone")
-        .sort({ date: 1, time: 1 });
-    
-      return res.json(unassignedAppointments);
-    }
-
-    res.json(appointments);
+    return res.json({ appointments: minimal });
   } catch (err) {
     console.error("Error fetching doctor appointments:", err);
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
+// Patient views their appointments
+const getPatientAppointments = async (req, res) => {
+  try {
+    const appointments = await Appointment.find({ patient: req.user.id })
+   .populate({
+    path: "doctor", // Appointment → Doctor
+    select: "verificationDetails fullName", 
+    populate: {
+      path: "verificationDetails", 
+      select: "fullName" 
+    }
+  })
+  console.log(appointments);
+    // Map to minimal shape required by frontend
+    const minimal = appointments.map((a) => ({
+      _id: a._id,
+      time: a.appointment_time,
+      status: a.status,
+      doctorName: a.doctor?.verificationDetails?.fullName || a.doctor?.fullName || "—",
+      name: a.doctor?.name || (a.patientInfo && a.patientInfo.name) || "—",
+      reason: a.reason || a.patientInfo?.reason || "",
+      date: a.appointment_date, // keep date if frontend needs it for calendar
+    }));
+
+    return res.status(200).json({ appointments: minimal });
+  } catch (err) {
+    console.error("Error fetching patient appointments:", err);
+    return res.status(500).json({ message: err.message });
+  }
+};
 
 // Doctor updates appointment status
 const updateAppointmentStatus = async (req, res) => {
@@ -326,61 +316,11 @@ const cancelAppointment = async (req, res) => {
   }
 };
  
-// Patient views their appointments
-const getPatientAppointments = async (req, res) => {
-  try {
-    const appointments = await Appointment.find({ patient: req.user.id })
-      .populate("doctor", "name specialization")
-      .sort({ date: -1 });
-
-    res.status(200).json({ appointments });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// Create a test appointment for debugging
-const createTestAppointment = async (req, res) => {
-  try {
-    
-    const today = new Date().toISOString().split('T')[0];
-    const testAppointment = new Appointment({
-      patient: req.user.id || "507f1f77bcf86cd799439011", // Use provided ID or a test ID
-      doctor: req.user.id || "507f1f77bcf86cd799439012", // Use provided ID or a test ID
-      patientInfo: {
-        name: "Test Patient",
-        gender: "male",
-        age: 30,
-        phone: "+91 9876543210",
-        note: "Test appointment for debugging"
-      },
-      date: today,
-      time: "10:00",
-      reason: "Test appointment",
-      status: "Upcoming"
-    });
-
-    await testAppointment.save();
-    
-    res.json({
-      success: true,
-      message: "Test appointment created successfully",
-      appointment: testAppointment
-    });
-  } catch (error) {
-    console.error("Error creating test appointment:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    });
-  }
-};
-
 module.exports = {
   bookAppointment,
   getDoctorAppointments,
   updateAppointmentStatus,
   cancelAppointment,
   getPatientAppointments,
-  createTestAppointment,
+  
 };

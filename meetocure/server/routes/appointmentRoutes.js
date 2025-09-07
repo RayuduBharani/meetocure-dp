@@ -1,14 +1,13 @@
-
 const express = require("express");
 const router = express.Router();
 const protect = require("../middleware/authMiddleware");
+const upload = require("../middleware/multerMemory");
 const {
   bookAppointment,
   getDoctorAppointments,
   updateAppointmentStatus,
   cancelAppointment,
   getPatientAppointments,
-  createTestAppointment,
 } = require("../controllers/appointmentController");
 const Availability = require("../models/Availability");
 
@@ -37,7 +36,12 @@ router.post("/search/:doctorId", async (req, res) => {
 });
 
 // Patient books appointment
-router.post("/", bookAppointment); 
+router.post(
+  "/book",
+  protect(["patient"]),
+  upload.array("medicalRecords", 10), // field name must match frontend FormData
+  bookAppointment
+);
 
 //Patient views their own appointments 
 router.get("/my", protect(["patient"]), getPatientAppointments);
@@ -51,7 +55,6 @@ router.put("/:id/status", protect(["doctor"]), updateAppointmentStatus);
 //Doctor cancels appointment
 router.put("/:id/cancel", protect(["doctor"]), cancelAppointment);
 
-// Test endpoint to create a test appointment
-router.post("/test", protect(["doctor"]), createTestAppointment);
+
 
 module.exports = router;

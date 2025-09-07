@@ -1,31 +1,42 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../../../lib/config";
-import { FaArrowLeft, FaUser, FaPhoneAlt, FaVenusMars } from "react-icons/fa";
+import { FaArrowLeft, FaUser, FaPhoneAlt, FaVenusMars, FaTrash } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
 import TopIcons from "../../../components/PatientTopIcons";
 import toast from "react-hot-toast";
 
+const recordTypes = [
+  { value: "prescription", label: "Prescription" },
+  { value: "ct_scan", label: "CT Scan" },
+  { value: "xray", label: "X-Ray" },
+  { value: "other", label: "Other" },
+];
+
 const PatientDetails = () => {
   const navigate = useNavigate();
-   const location = useLocation();
-  // Extract passed props
+  const location = useLocation();
   const { date, time, doctorId } = location.state || {};
-  console.log("Received props:", { date, time, doctorId });
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     age: "",
     gender: "",
+    blood_group: "",
+    allergies: "", // comma separated
+    medical_history_summary: "",
+    reason: "",
   });
+  // files: { file: File, record_type: string, description: string, id: number }
+  const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if(!date || !time || !doctorId) {
+    if (!date || !time || !doctorId) {
       toast.error("Missing appointment details. Please select again.");
       navigate("/patient/appointments/datetime");
     }
-  },[location.state, navigate]);
+  }, [location.state, navigate, date, time, doctorId]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -41,82 +52,109 @@ const PatientDetails = () => {
 
   const validatePhone = (phone) => /^\d{10}$/.test(phone);
 
-const handleContinue = async () => {
-  const { name, phone, age, gender } = formData;
+  const handleFilesChange = (e) => {
+    const selected = Array.from(e.target.files || []);
+    // merge new files, assign defaults
+    const mapped = selected.map((f, idx) => ({
+      id: Date.now() + idx,
+      file: f,
+      record_type: "other",
+      description: "",
+    }));
+    setFiles((prev) => [...prev, ...mapped]);
+  };
 
-  if (!name || !phone || !age || !gender) {
-    toast.error("Please fill all required fields");
-    return;
-  }
+  const updateFileMeta = (id, key, value) => {
+    setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, [key]: value } : f)));
+  };
 
-  if (!validatePhone(phone)) {
-    toast.error("Please enter a valid 10-digit mobile number.");
-    return;
-  }
+  const removeFile = (id) => setFiles((prev) => prev.filter((f) => f.id !== id));
 
-  if (age <= 0 || age > 120) {
-    toast.error("Please enter a valid age.");
-    return;
-  }
+  const handleContinue = async () => {
+    const { name, phone, age, gender, blood_group, allergies, medical_history_summary, reason } = formData;
 
-  if (!doctorId || !date || !time) {
-    toast.error("Appointment details missing. Please try again.");
-    navigate("/patient/appointments/datetime");
-    return;
-  }
-
-  setLoading(true);
-  const loadingToast = toast.loading("Booking appointment...");
-
-  try {
-    const token = localStorage.getItem("token");
-
-    // ✅ Parse stored patient object
-    const storedPatient = localStorage.getItem("user");
-    const patientId = storedPatient ? JSON.parse(storedPatient)._id : null;
-
-    if (!patientId) {
-      toast.error("Patient not found. Please log in again.");
-      setLoading(false);
-      navigate("/dual-patient");
+    if (!name || !phone || !age || !gender) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+    if (!validatePhone(phone)) {
+      toast.error("Please enter a valid 10-digit mobile number.");
+      return;
+    }
+    if (age <= 0 || age > 120) {
+      toast.error("Please enter a valid age.");
+      return;
+    }
+    if (!doctorId || !date || !time) {
+      toast.error("Appointment details missing. Please try again.");
+      navigate("/patient/appointments/datetime");
       return;
     }
 
-    const payload = {
-      patient: patientId,        // ✅ correct _id
-      doctor: doctorId,
-      patientInfo: { name, phone, age, gender: gender.toLowerCase() }, // 👈 lowercase to match schema
-      date,
-      time,
-      reason: "Routine Checkup",
-    };
-    console.log("Booking payload:", payload);
-    await axios.post(
-      `${import.meta.env.VITE_BACKEND_URL}/api/appointments`,
-      payload,
-      {
+    setLoading(true);
+    const loadingToast = toast.loading("Booking appointment...");
+
+    try {
+      const token = localStorage.getItem("token");
+      const storedPatient = localStorage.getItem("user");
+      const patientId = storedPatient ? JSON.parse(storedPatient)._id : null;
+
+      if (!patientId) {
+        toast.error("Patient not found. Please log in again.");
+        setLoading(false);
+        navigate("/dual-patient");
+        return;
+      }
+
+      const data = new FormData();
+      data.append("patient", patientId);
+      data.append("doctor", doctorId);
+      data.append("date", date);
+      data.append("time", time);
+      data.append("reason", reason || "Routine Checkup");
+
+      // patientInfo includes the snapshot fields
+      const patientInfoObj = {
+        name,
+        phone,
+        age,
+        gender: gender.toLowerCase(),
+        blood_group: blood_group || null,
+        allergies: allergies ? allergies.split(",").map(a => a.trim()).filter(Boolean) : [],
+        medical_history_summary: medical_history_summary || "",
+      };
+      data.append("patientInfo", JSON.stringify(patientInfoObj));
+
+      // append files and build metadata array in same order
+      const meta = [];
+      files.forEach((fObj) => {
+        data.append("medicalRecords", fObj.file);
+        meta.push({
+          originalname: fObj.file.name,
+          record_type: fObj.record_type,
+          description: fObj.description || fObj.file.name,
+        });
+      });
+      if (meta.length) data.append("medicalRecordsMeta", JSON.stringify(meta));
+
+      await axios.post(`${API_BASE_URL}/api/appointments/book`, data, {
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
         },
-      }
-    );
+      });
 
-    toast.dismiss(loadingToast);
-    toast.success("Appointment booked in progress!");
-    window.location.href = "https://rzp.io/rzp/8l24wgPo";
-    setLoading(false);
-    // navigate("/patient/appointments/payment");
-  } catch (error) {
-    setLoading(false);
-    toast.dismiss(loadingToast);
-    console.error("Booking failed", error);
-    toast.error(error.response?.data?.message || "Failed to book appointment");
-  }
-};
-
-
-
+      toast.dismiss(loadingToast);
+      toast.success("Appointment booked in progress!");
+      // for testing flow (payment later)
+      window.location.href = "https://rzp.io/rzp/8l24wgPo";
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      toast.dismiss(loadingToast);
+      const msg = error.response?.data?.message || "Something went wrong!";
+      toast.error(msg); 
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white px-6 py-6 lg:px-20 lg:py-10">
@@ -131,7 +169,7 @@ const handleContinue = async () => {
         <TopIcons />
       </div>
 
-      {/* Step Progress */}
+      {/* Step Progress (unchanged) */}
       <div className="flex justify-center mb-10">
         <div className="flex items-center gap-6 text-center">
           <div>
@@ -145,7 +183,7 @@ const handleContinue = async () => {
           </div>
           <div className="w-10 h-px bg-gray-300 mt-4"></div>
           <div>
-            <div className="w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-semibold">3</div>
+            <div className="w-10 h-10 rounded-full bg-[#f3f4f6] text-gray-500 flex items-center justify-center font-semibold">3</div>
             <p className="text-sm text-gray-400 mt-2">Payment</p>
           </div>
         </div>
@@ -218,6 +256,106 @@ const handleContinue = async () => {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Blood Group */}
+        <div>
+          <label className="block font-semibold mb-1">Blood Group</label>
+          <select
+            name="blood_group"
+            value={formData.blood_group}
+            onChange={handleInputChange}
+            className="w-full border border-gray-300 rounded-xl px-4 py-2 bg-white"
+          >
+            <option value="">Select blood group (optional)</option>
+            {["A+","A-","B+","B-","AB+","AB-","O+","O-"].map(bg => <option key={bg} value={bg}>{bg}</option>)}
+          </select>
+        </div>
+
+        {/* Allergies */}
+        <div>
+          <label className="block font-semibold mb-1">Allergies (comma separated)</label>
+          <input
+            type="text"
+            name="allergies"
+            placeholder="e.g. Penicillin, Pollen"
+            value={formData.allergies}
+            onChange={handleInputChange}
+            className="w-full border border-gray-300 rounded-xl px-4 py-2 bg-white"
+          />
+        </div>
+
+        {/* Medical History Summary */}
+        <div>
+          <label className="block font-semibold mb-1">Medical History Summary</label>
+          <textarea
+            name="medical_history_summary"
+            value={formData.medical_history_summary}
+            onChange={handleInputChange}
+            rows={3}
+            className="w-full border border-gray-300 rounded-xl px-4 py-2 bg-white"
+            placeholder="Short summary of medical history (optional)"
+          />
+        </div>
+
+        {/* Reason for Visit */}
+        <div>
+          <label className="block font-semibold mb-1">Reason for Visit</label>
+          <textarea
+            name="reason"
+            value={formData.reason}
+            onChange={handleInputChange}
+            rows={2}
+            className="w-full border border-gray-300 rounded-xl px-4 py-2 bg-white"
+            placeholder="Reason (optional)"
+          />
+        </div>
+
+        {/* Medical Records Upload */}
+        <div>
+          <label className="block font-semibold mb-1">Medical Records (optional)</label>
+          <input
+            type="file"
+            name="medicalRecords"
+            multiple
+            accept="image/*,application/pdf"
+            onChange={handleFilesChange}
+            className="block w-full"
+          />
+          {files.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {files.map((fObj) => (
+                <div key={fObj.id} className="flex items-center gap-3 bg-white p-3 rounded-lg border">
+                  <div className="flex-1">
+                    <div className="font-medium">{fObj.file.name}</div>
+                    <div className="flex gap-2 mt-2">
+                      <select
+                        value={fObj.record_type}
+                        onChange={(e) => updateFileMeta(fObj.id, "record_type", e.target.value)}
+                        className="border rounded px-2 py-1"
+                      >
+                        {recordTypes.map(rt => <option key={rt.value} value={rt.value}>{rt.label}</option>)}
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Description (optional)"
+                        value={fObj.description}
+                        onChange={(e) => updateFileMeta(fObj.id, "description", e.target.value)}
+                        className="flex-1 border rounded px-2 py-1"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(fObj.id)}
+                    className="text-red-500 p-2"
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Continue Button */}

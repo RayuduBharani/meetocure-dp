@@ -83,7 +83,7 @@ function App() {
         <Route path="/doctor/availability/change/:date" element={<ChangeAvailability />} />
         <Route path="/doctor/availability/add" element={<AddAvailability />} />
         <Route path="/doctor/profile" element={<DoctorProfilePage />} />
-        <Route path="/doctor/profile-view" element={<ProfileView />} />
+        <Route path="/doctor/profile-view" element={<ProfileView />} /> /...
         <Route path="/doctor/profile/edit" element={<EditProfile />} />
         <Route path="/doctor/notifications" element={<Notifications />} />
         <Route path="/doctor/ai-chat" element={<ChatAI />} />

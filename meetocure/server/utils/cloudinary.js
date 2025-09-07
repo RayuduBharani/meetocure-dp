@@ -7,6 +7,17 @@ cloudinary.config({
   secure: true,
 });
 
+const uploadBufferToCloudinary = (buffer, folder = "medical_records", filename) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder, public_id: filename, resource_type: 'auto' },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result.secure_url);
+      }
+    );
+    stream.end(buffer);
+  });
+};
 
-
-module.exports = cloudinary;
+module.exports = { cloudinary, uploadBufferToCloudinary };
