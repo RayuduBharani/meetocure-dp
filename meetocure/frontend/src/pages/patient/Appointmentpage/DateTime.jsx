@@ -106,7 +106,8 @@ const DateTime = () => {
     setLoadingSlots(true);
     setSlotsError("");
     try {
-      const base = import.meta.env.VITE_BACKEND_URL || "";
+      const base = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+      console.log("Fetching availability from:", `${base}/api/availability/${encodeURIComponent(doctorId)}`);
       const res = await axios.get(`${base}/api/availability/${encodeURIComponent(doctorId)}`);
       const data = res.data;
       const days = data?.days || [];
@@ -121,7 +122,13 @@ const DateTime = () => {
       }
     } catch (err) {
       console.error("Fetch availability error:", err);
-      setSlotsError(err.response?.data?.message || "Failed to fetch availability");
+      console.error("Error details:", {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        url: err.config?.url
+      });
+      setSlotsError(err.response?.data?.message || err.message || "Failed to fetch availability");
       setAvailableSlots([]);
     } finally {
       setLoadingSlots(false);

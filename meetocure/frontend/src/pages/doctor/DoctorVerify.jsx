@@ -3,6 +3,7 @@ import { FaEnvelope, FaPhoneAlt, FaLock, FaArrowLeft } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { API_BASE_URL } from "../../lib/config";
 
 const DoctorVerify = () => {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ const DoctorVerify = () => {
       }
 
       const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/auth/doctor/send-otp`,
+        `${API_BASE_URL}/api/auth/doctor/send-otp`,
         { phone }
       );
 
@@ -61,7 +62,7 @@ const DoctorVerify = () => {
         phone = "+91" + phone;
       }
 
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/doctor/verify-otp`, {
+      await axios.post(`${API_BASE_URL}/api/auth/doctor/verify-otp`, {
         phone,
         otp,
       });
@@ -83,7 +84,7 @@ const DoctorVerify = () => {
     const loadingToast = toast.loading("Signing in...");
     try {
       const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/auth/doctor/doctor-auth`,
+        `${API_BASE_URL}/api/auth/doctor/doctor-auth`,
         formData
       );
 
@@ -96,8 +97,16 @@ const DoctorVerify = () => {
         navigate("/doctor-dashboard");
       } else if (res.data.registrationStatus === "pending_verification" || res.data.doctor?.registrationStatus === "pending_verification") {
         const doctorId = res.data.doctorId || res.data.doctor?.doctorId;
+        // Store doctor info for later use in verification process
+        if (res.data.doctor) {
+          localStorage.setItem("doctorInfo", JSON.stringify(res.data.doctor));
+        }
+        // Also store doctorId separately for easy access
+        if (doctorId) {
+          localStorage.setItem("doctorId", doctorId);
+        }
         toast.dismiss(loadingToast);
-        navigate(`/hospitalform/?doctorId=${doctorId}`);
+        navigate(`/hospital-form`);
       }
     } catch (err) {
       toast.dismiss(loadingToast);

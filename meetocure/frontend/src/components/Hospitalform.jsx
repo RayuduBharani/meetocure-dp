@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 
 const App = () => {
@@ -7,14 +7,22 @@ const App = () => {
   const [hospitalAddress, setHospitalAddress] = useState('');
   const [contactNumber, setContactNumber] = useState('');
 
+  const navigate = useNavigate();
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log({
+    // Store the hospital data (you might want to send this to an API)
+    const hospitalData = {
       hospitalName,
       hospitalAddress,
       contactNumber,
-    });
-    alert('Form submitted! Check the console for data.');
+    };
+    
+    // You can store this data in localStorage if needed
+    localStorage.setItem('hospitalData', JSON.stringify(hospitalData));
+    
+    // Navigate to doctor verification page
+    navigate('/doctor-verification');
   };
 
   return (
@@ -24,6 +32,7 @@ const App = () => {
           <h1 className="text-4xl sm:text-5xl font-bold text-primary">
             Hospital Information
           </h1>
+          <div className="mt-4 text-gray-600">Step 1 of 3</div>
         </header>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -52,9 +61,7 @@ const App = () => {
             onChange={(e) => setContactNumber(e.target.value)}
           />
           <div className="pt-6 flex justify-center">
-            <Link to="/doctor-verification">
             <Button type="submit">Next</Button>
-            </Link>
           </div>
         </form>
       </div>

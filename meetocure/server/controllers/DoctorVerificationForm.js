@@ -21,8 +21,19 @@ const uploadBufferToCloudinary = (buffer, folder, filename) => {
 const verifyDoctor = async (req, res) => {
   try {
     console.log("Doctor Verification Request: files:", Object.keys(req.files || {}));
+    console.log("Request body keys:", Object.keys(req.body || {}));
+    console.log("Query params:", req.query);
+    console.log("Sample body data:", {
+      profileImage: req.body.profileImage,
+      identityDocument: req.body.identityDocument,
+      medicalCouncilRegistrationNumber: req.body.medicalCouncilRegistrationNumber
+    });
 
     const { doctorId } = req.query; // from frontend query param
+    if (!doctorId) {
+      return res.status(400).json({ message: "Doctor ID is required" });
+    }
+
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) {
       return res.status(404).json({ message: "Doctor not found" });
@@ -30,6 +41,39 @@ const verifyDoctor = async (req, res) => {
 
     // Build data from body
     const data = { ...req.body };
+    
+    // Extract hospital and banking information
+    const hospitalInfo = {};
+    const bankingInfo = {};
+    
+    // Extract hospital data (prefixed with hospital_)
+    Object.keys(req.body).forEach(key => {
+      if (key.startsWith('hospital_')) {
+        const fieldName = key.replace('hospital_', '');
+        hospitalInfo[fieldName] = req.body[key];
+      }
+    });
+    
+    // Extract banking data (prefixed with bank_)
+    Object.keys(req.body).forEach(key => {
+      if (key.startsWith('bank_')) {
+        const fieldName = key.replace('bank_', '');
+        bankingInfo[fieldName] = req.body[key];
+      }
+    });
+
+    console.log("Extracted hospitalInfo:", hospitalInfo);
+    console.log("Extracted bankingInfo:", bankingInfo);
+
+    // Parse JSON fields that might be sent as strings (e.g., arrays or objects)
+    try {
+      if (typeof data.qualifications === 'string') data.qualifications = JSON.parse(data.qualifications);
+      if (typeof data.clinicHospitalAffiliations === 'string') data.clinicHospitalAffiliations = JSON.parse(data.clinicHospitalAffiliations);
+      if (typeof data.qualificationCertificates === 'string') data.qualificationCertificates = JSON.parse(data.qualificationCertificates);
+      if (typeof data.location === 'string') data.location = JSON.parse(data.location);
+    } catch (parseErr) {
+      console.warn('Failed to parse some JSON fields:', parseErr.message);
+    }
 
     // If files were uploaded, upload them to Cloudinary and set URLs
     if (req.files) {
@@ -40,18 +84,18 @@ const verifyDoctor = async (req, res) => {
         data.profileImage = url;
       }
 
-      // identityDocument (Aadhaar image) -> identityDocumentUrl
+      // identityDocument (Aadhaar image)
       if (req.files.identityDocument && req.files.identityDocument[0]) {
         const file = req.files.identityDocument[0];
         const url = await uploadBufferToCloudinary(file.buffer, 'doctor_verifications', `identity_${doctorId}`);
-        data.identityDocumentUrl = url;
+        data.identityDocument = url;
       }
 
       // medicalCouncilCertificate
       if (req.files.medicalCouncilCertificate && req.files.medicalCouncilCertificate[0]) {
         const file = req.files.medicalCouncilCertificate[0];
         const url = await uploadBufferToCloudinary(file.buffer, 'doctor_verifications', `council_${doctorId}`);
-        data.medicalCouncilCertificateUrl = url;
+        data.medicalCouncilCertificate = url;
       }
 
       // qualificationCertificates (multiple)
@@ -61,53 +105,139 @@ const verifyDoctor = async (req, res) => {
           const url = await uploadBufferToCloudinary(file.buffer, 'doctor_verifications', `qual_${doctorId}_${idx}`);
           certUrls.push(url);
         }
-        data.qualificationCertificatesUrls = certUrls;
+        data.qualificationCertificates = certUrls;
       }
 
-      // digitalSignatureCertificate -> digitalSignatureCertificateUrl
+      // digitalSignatureCertificate
       if (req.files.digitalSignatureCertificate && req.files.digitalSignatureCertificate[0]) {
         const file = req.files.digitalSignatureCertificate[0];
         const url = await uploadBufferToCloudinary(file.buffer, 'doctor_verifications', `dsig_${doctorId}`);
-        data.digitalSignatureCertificateUrl = url;
+        data.digitalSignatureCertificate = url;
       }
     }
 
-    // Parse JSON fields that might be sent as strings (e.g., arrays or objects)
-    try {
-      if (typeof data.qualifications === 'string') data.qualifications = JSON.parse(data.qualifications);
-      if (typeof data.clinicHospitalAffiliations === 'string') data.clinicHospitalAffiliations = JSON.parse(data.clinicHospitalAffiliations);
-      if (typeof data.qualificationCertificatesUrls === 'string') data.qualificationCertificatesUrls = JSON.parse(data.qualificationCertificatesUrls);
-      if (typeof data.location === 'string') data.location = JSON.parse(data.location);
-    } catch (parseErr) {
-      console.warn('Failed to parse some JSON fields:', parseErr.message);
-    }
+    // Clean up any array fields that might have been sent incorrectly
+    const fileFields = ['profileImage', 'identityDocument', 'medicalCouncilCertificate', 'digitalSignatureCertificate'];
+    fileFields.forEach(field => {
+      if (Array.isArray(data[field])) {
+        console.log(`Cleaning up array field ${field}:`, data[field]);
+        data[field] = ''; // Clear the field, it will be set by file upload
+      }
+    });
 
     // Server-side required field checks (ensure required image URLs present)
     if (!data.profileImage) return res.status(400).json({ message: "Profile image is required" });
-    if (!data.identityDocumentUrl) return res.status(400).json({ message: "Aadhaar image (identityDocument) is required" });
-    if (!data.medicalCouncilCertificateUrl) return res.status(400).json({ message: "Medical council certificate image is required" });
-    if (!data.digitalSignatureCertificateUrl) return res.status(400).json({ message: "Digital signature certificate image is required" });
-    if (!Array.isArray(data.qualificationCertificatesUrls) || data.qualificationCertificatesUrls.length === 0) {
+    if (!data.identityDocument) return res.status(400).json({ message: "Aadhaar image (identityDocument) is required" });
+    if (!data.medicalCouncilCertificate) return res.status(400).json({ message: "Medical council certificate image is required" });
+    if (!data.digitalSignatureCertificate) return res.status(400).json({ message: "Digital signature certificate image is required" });
+    if (!Array.isArray(data.qualificationCertificates) || data.qualificationCertificates.length === 0) {
       return res.status(400).json({ message: "At least one qualification certificate image is required" });
     }
+    // Generate a default medical council registration number if not provided
     if (!data.medicalCouncilRegistrationNumber) {
-      return res.status(400).json({ message: "medicalCouncilRegistrationNumber is required" });
+      // Generate a unique registration number based on doctor ID and timestamp
+      const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+      const doctorIdShort = doctor._id.toString().slice(-4); // Last 4 characters of doctor ID
+      data.medicalCouncilRegistrationNumber = `MCR${doctorIdShort}${timestamp}`;
+      console.log("Generated default medical council registration number:", data.medicalCouncilRegistrationNumber);
     }
 
-    // Ensure medicalCouncilRegistrationNumber is unique across verifications (and optionally doctors)
-    const existing = await DoctorVerification.findOne({ medicalCouncilRegistrationNumber: data.medicalCouncilRegistrationNumber });
-    if (existing && existing.doctorId.toString() !== doctorId.toString()) {
-      return res.status(400).json({ message: "This medical council registration number is already used" });
+    // Ensure medicalCouncilRegistrationNumber is unique across verifications
+    console.log("Checking medicalCouncilRegistrationNumber:", data.medicalCouncilRegistrationNumber);
+    console.log("Current doctorId:", doctorId);
+    console.log("Doctor from DB:", doctor._id.toString());
+    
+    if (data.medicalCouncilRegistrationNumber) {
+      const existing = await DoctorVerification.findOne({ 
+        medicalCouncilRegistrationNumber: data.medicalCouncilRegistrationNumber 
+      });
+      
+      console.log("Existing verification found:", existing);
+      
+      if (existing) {
+        console.log("Existing doctorId:", existing.doctorId?.toString());
+        console.log("Current doctorId from query:", doctorId.toString());
+        console.log("Doctor ID from DB:", doctor._id.toString());
+        
+        // Use the doctor ID from the database (more reliable)
+        const actualDoctorId = doctor._id.toString();
+        const existingDoctorId = existing.doctorId?.toString();
+        
+        // Allow the same doctor to update their verification
+        if (existingDoctorId && existingDoctorId !== actualDoctorId) {
+          console.log("Different doctor - checking if we can update");
+          
+          // Check if the existing verification belongs to a doctor that no longer exists
+          const existingDoctor = await Doctor.findById(existingDoctorId);
+          if (!existingDoctor) {
+            console.log("Existing doctor not found - allowing update");
+            // Delete the orphaned verification
+            await DoctorVerification.findByIdAndDelete(existing._id);
+          } else {
+            console.log("Different active doctor - blocking");
+            return res.status(400).json({ 
+              message: "This medical council registration number is already used by another doctor" 
+            });
+          }
+        } else {
+          console.log("Same doctor updating verification - allowed");
+        }
+      } else {
+        console.log("No existing verification found - creating new one");
+      }
+    } else {
+      console.log("No medicalCouncilRegistrationNumber provided");
     }
 
-    const verification = new DoctorVerification({
+    // Check if verification already exists for this doctor
+    const existingVerification = await DoctorVerification.findOne({ doctorId: doctor._id });
+    
+    // Only include hospital and banking info if they have data
+    const verificationData = {
       doctorId: doctor._id,
-      ...data,
-    });
-    await verification.save();
+      ...data
+    };
 
+    // Only add hospitalInfo if it has data
+    if (Object.keys(hospitalInfo).length > 0) {
+      verificationData.hospitalInfo = [hospitalInfo];
+    }
+
+    // Only add bankingInfo if it has data
+    if (Object.keys(bankingInfo).length > 0) {
+      verificationData.bankingInfo = [bankingInfo];
+    }
+
+    console.log("Final verification data:", verificationData);
+
+    let verification;
+    if (existingVerification) {
+      // Update existing verification
+      console.log("Updating existing verification:", existingVerification._id);
+      verification = await DoctorVerification.findByIdAndUpdate(
+        existingVerification._id,
+        verificationData,
+        { new: true, runValidators: true }
+      );
+    } else {
+      // Create new verification
+      console.log("Creating new verification");
+      verification = new DoctorVerification(verificationData);
+      await verification.save();
+    }
+
+    // Update doctor with verification details
     doctor.verificationDetails = verification._id;
-    // Consider 'under_review' if you have workflow — keeping 'verified' as before:
+    
+    // Only update hospital and banking info if they have data
+    if (Object.keys(hospitalInfo).length > 0) {
+      doctor.hospitalInfo = hospitalInfo;
+    }
+    if (Object.keys(bankingInfo).length > 0) {
+      doctor.bankingInfo = bankingInfo;
+    }
+    
+    // Set registration status to verified
     doctor.registrationStatus = "verified";
     await doctor.save();
 
@@ -121,6 +251,12 @@ const verifyDoctor = async (req, res) => {
       success: true,
       message: "Verification submitted successfully",
       token,
+      doctor: {
+        _id: doctor._id,
+        email: doctor.email,
+        registrationStatus: doctor.registrationStatus,
+        verificationDetails: doctor.verificationDetails
+      }
     });
   } catch (err) {
     console.error("Doctor Verification Error:", err);
@@ -128,4 +264,67 @@ const verifyDoctor = async (req, res) => {
   }
 };
 
-module.exports = { verifyDoctor };
+const getVerificationStatus = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    
+    if (!doctorId) {
+      return res.status(400).json({ message: "Doctor ID is required" });
+    }
+
+    const doctor = await Doctor.findById(doctorId);
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+
+    const verification = await DoctorVerification.findOne({ doctorId: doctorId });
+    
+    return res.json({
+      success: true,
+      doctor: {
+        _id: doctor._id,
+        email: doctor.email,
+        registrationStatus: doctor.registrationStatus,
+        verificationDetails: doctor.verificationDetails
+      },
+      verification: verification || null
+    });
+  } catch (err) {
+    console.error("Get Verification Status Error:", err);
+    res.status(500).json({ message: err.message || "Failed to get verification status" });
+  }
+};
+
+const deleteVerification = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    
+    if (!doctorId) {
+      return res.status(400).json({ message: "Doctor ID is required" });
+    }
+
+    const verification = await DoctorVerification.findOneAndDelete({ doctorId: doctorId });
+    
+    if (!verification) {
+      return res.status(404).json({ message: "No verification found for this doctor" });
+    }
+
+    // Update doctor status
+    const doctor = await Doctor.findById(doctorId);
+    if (doctor) {
+      doctor.verificationDetails = undefined;
+      doctor.registrationStatus = "pending_verification";
+      await doctor.save();
+    }
+
+    return res.json({
+      success: true,
+      message: "Verification deleted successfully"
+    });
+  } catch (err) {
+    console.error("Delete Verification Error:", err);
+    res.status(500).json({ message: err.message || "Failed to delete verification" });
+  }
+};
+
+module.exports = { verifyDoctor, getVerificationStatus, deleteVerification };

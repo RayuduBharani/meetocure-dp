@@ -40,8 +40,9 @@ const AddAvailability = () => {
     try {
       const token = localStorage.getItem("doctorToken");
       console.log("Token:", token);
+      const base = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
       await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/availability`,
+        `${base}/api/availability`,
         {
           days: [
             {

@@ -23,6 +23,10 @@ const protect = (roles = []) => {
         if (!user) {
           user = await Doctor.findById(decoded.id);
         }
+        // Set the doctorId for easy access in controllers
+        if (user) {
+          user.doctorId = decoded.id;
+        }
       } else if (role === "patient") {
         user = await Patient.findById(decoded.id);
       }
@@ -33,6 +37,7 @@ const protect = (roles = []) => {
 
       req.user = user;
       req.user.role = role;
+      req.user.id = decoded.id; // Ensure req.user.id is set for consistency
 
       if (roles.length && !roles.includes(role)) {
         return res.status(403).json({ message: "Access forbidden: insufficient rights" });

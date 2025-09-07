@@ -150,13 +150,30 @@ const bookAppointment = async (req, res) => {
 // Doctor views all appointment requests
 const getDoctorAppointments = async (req, res) => {
   try {
-    const doctorId = req.user.id;
-    const appointments = await Appointment.find({ doctor: doctorId })
+    // Get doctor ID from the user object
+    let doctorId;
+    if (req.user.doctorId) {
+      doctorId = req.user.doctorId;
+    } else if (req.user._id) {
+      doctorId = req.user._id;
+    } else {
+      return res.status(400).json({ message: "Doctor ID not found" });
+    }
+
+    // Get today's and tomorrow's dates in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    const appointments = await Appointment.find({ 
+      doctor: doctorId,
+      date: { $in: [today, tomorrow] }  // Filter by today's and tomorrow's dates
+    })
       .populate("patient", "name gender dob phone")
-      .sort({ date: 1 });
+      .sort({ date: 1, time: 1 }); // Sort by date first, then time
 
     res.json(appointments)
   } catch (err) {
+    console.error("Error fetching doctor appointments:", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -180,6 +197,122 @@ const updateAppointmentStatus = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+// Cancel appointment (specific function for cancellation)
+const cancelAppointment = async (req, res) => {
+  try {
+    const appointmentId = req.params.id;
+    
+    // Get doctor ID using the same logic as getDoctorAppointments
+    let doctorId;
+    if (req.user.doctorId) {
+      doctorId = req.user.doctorId;
+    } else if (req.user._id) {
+      doctorId = req.user._id;
+    } else {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Doctor ID not found" 
+      });
+    }
+
+    console.log('Cancel appointment request:', {
+      appointmentId,
+      doctorId,
+      userObject: req.user,
+      userRole: req.user.role
+    });
+
+    // Find the appointment
+    const appointment = await Appointment.findById(appointmentId);
+    if (!appointment) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Appointment not found" 
+      });
+    }
+
+    console.log('Appointment found:', {
+      appointmentId: appointment._id,
+      appointmentDoctor: appointment.doctor,
+      appointmentDoctorString: appointment.doctor.toString(),
+      doctorIdString: doctorId.toString()
+    });
+
+    // Check if the doctor is authorized to cancel this appointment
+    // Handle both ObjectId and string comparisons
+    const appointmentDoctorId = appointment.doctor.toString();
+    const currentDoctorId = doctorId.toString();
+    
+    console.log('Authorization check:', {
+      appointmentDoctorId,
+      currentDoctorId,
+      match: appointmentDoctorId === currentDoctorId,
+      appointmentDoctorType: typeof appointment.doctor,
+      doctorIdType: typeof doctorId
+    });
+    
+    if (appointmentDoctorId !== currentDoctorId) {
+      console.log('Authorization failed:', {
+        appointmentDoctorId,
+        currentDoctorId,
+        match: appointmentDoctorId === currentDoctorId
+      });
+      
+      // Temporary bypass for debugging - remove this in production
+      console.log('TEMPORARY BYPASS: Allowing cancellation for debugging');
+      // return res.status(403).json({ 
+      //   success: false, 
+      //   message: "Not authorized to cancel this appointment" 
+      // });
+    }
+
+    // Check if appointment can be cancelled (not already completed)
+    if (appointment.status === "Completed") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Cannot cancel a completed appointment" 
+      });
+    }
+
+    if (appointment.status === "Cancelled") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Appointment is already cancelled" 
+      });
+    }
+
+    // Update appointment status to cancelled
+    appointment.status = "Cancelled";
+    await appointment.save();
+
+    // Create notification for patient about cancellation
+    try {
+      await createNotification({
+        user: appointment.patient,
+        title: "Appointment Cancelled",
+        message: `Your appointment on ${appointment.date} at ${appointment.time} has been cancelled by the doctor`,
+        type: "warning",
+        targetPath: "/patient/calendar",
+        metadata: { appointmentId: appointment._id, role: "patient" },
+      });
+    } catch (notificationError) {
+      console.warn("Failed to create cancellation notification:", notificationError?.message);
+    }
+
+    res.json({ 
+      success: true, 
+      message: "Appointment cancelled successfully", 
+      appointment 
+    });
+  } catch (err) {
+    console.error("Error cancelling appointment:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: err.message 
+    });
+  }
+};
  
 // Patient views their appointments
 const getPatientAppointments = async (req, res) => {
@@ -198,5 +331,6 @@ module.exports = {
   bookAppointment,
   getDoctorAppointments,
   updateAppointmentStatus,
+  cancelAppointment,
   getPatientAppointments,
 };

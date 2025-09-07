@@ -22,7 +22,7 @@ import Settings from "./pages/doctor/profile/Settings";
 import HelpSupport from "./pages/doctor/profile/HelpSupport";
 import TermsConditions from "./pages/doctor/profile/TermsConditions";
 import Hospitalform from "./components/Hospitalform";
-import Bankdetailsform from "./components/Bankdetailsform";
+import BankingInformation from "./pages/doctor/BankingInformation";
 
 // Patient Side
 import PatientDashboard from "./pages/patient/PatientDashboard";
@@ -89,8 +89,8 @@ function App() {
         <Route path="/doctor/help" element={<HelpSupport />} />
         <Route path="/doctor/terms" element={<TermsConditions />} />
         <Route path="/doctor-verification" element={<DoctorVerification />} />
-        <Route path="/hospitalform" element={<Hospitalform />} />
-        <Route path="/bankdetailsform" element={<Bankdetailsform />} />
+        <Route path="/hospital-form" element={<Hospitalform />} />
+        <Route path="/banking-information" element={<BankingInformation />} />
         {/* </Route> */}
         {/* Patient Routes */}
         {/* <Route element={<PrivateRoute allowedRoles={['patient']} />}> */}

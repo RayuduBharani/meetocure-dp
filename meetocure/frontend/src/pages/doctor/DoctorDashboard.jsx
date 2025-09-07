@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import HeroCarousel from "../../components/HeroBanners";
 import TodayAppointments from "../../components/TodayAppointments";
@@ -15,6 +15,32 @@ const navItems = [
 ];
 const DoctorDashboard = () => {
   const navigate = useNavigate();
+
+  // Check authentication on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('doctorToken');
+    const doctorInfo = localStorage.getItem('doctorInfo');
+    
+    if (!token || !doctorInfo) {
+      console.log('No authentication found, redirecting to login');
+      navigate('/doctor-verify');
+      return;
+    }
+
+    // Verify the doctor is verified
+    try {
+      const doctor = JSON.parse(doctorInfo);
+      if (doctor.registrationStatus !== 'verified') {
+        console.log('Doctor not verified, redirecting to verification');
+        navigate('/hospital-form');
+        return;
+      }
+    } catch (error) {
+      console.error('Error parsing doctor info:', error);
+      navigate('/doctor-verify');
+      return;
+    }
+  }, [navigate]);
 
   return (
     <div className="flex bg-[#F8FAFC] font-[Poppins]">

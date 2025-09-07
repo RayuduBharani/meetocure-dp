@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
 export const DoctorVerification = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  // eslint-disable-next-line no-unused-vars
+  const [hospitalData, setHospitalData] = useState(null);
 
-  const queryParams = new URLSearchParams(location.search);
-  const doctorId = queryParams.get("doctorId");
+  // Check for hospital data
+  useEffect(() => {
+    const storedHospitalData = localStorage.getItem('hospitalData');
+    if (!storedHospitalData) {
+      toast.error("Please fill hospital information first");
+      navigate('/hospital-form');
+      return;
+    }
+    setHospitalData(JSON.parse(storedHospitalData));
+  }, [navigate]);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -22,25 +30,24 @@ export const DoctorVerification = () => {
     category: "General",
     qualifications: [{ degree: "", universityCollege: "", year: "" }],
     experienceYears: "",
-    // changed: make affiliations an array (JSX maps over this)
-    clinicHospitalAffiliations: [
-      {
-        name: "",
-        city: "",
-        state: "",
-        // keep startDate/endDate here to match the existing form fields
-        startDate: "",
-        endDate: "",
-        designation: "",
-      },
-    ],
+    location: {
+      city: "",
+      state: ""
+    },
+    clinicHospitalAffiliations: [{
+      name: "",
+      city: "",
+      state: "",
+      joinDate: "",
+      designation: ""
+    }],
     aadhaarNumber: "",
     panNumber: "",
-    // these will be filled by backend after file upload; keep keys for clarity
-    identityDocumentUrl: "",
-    medicalCouncilCertificateUrl: "",
-    qualificationCertificatesUrls: [],
-    digitalSignatureCertificateUrl: "",
+    // these will be filled by backend after file upload
+    identityDocument: "",
+    medicalCouncilCertificate: "",
+    qualificationCertificates: [],
+    digitalSignatureCertificate: "",
     profileImage: "",
   });
 
@@ -51,12 +58,16 @@ export const DoctorVerification = () => {
   const [qualificationCertificateFiles, setQualificationCertificateFiles] = useState([]);
   const [digitalSignatureFile, setDigitalSignatureFile] = useState(null);
 
+  // Check for hospital data on initial load
   useEffect(() => {
-    if (!doctorId) {
-      toast.error("Doctor ID not found. Please try again.");
-      navigate("/dual-doctor");
+    const storedHospitalData = localStorage.getItem('hospitalData');
+    if (!storedHospitalData) {
+      toast.error("Hospital information not found. Please fill in hospital details first.");
+      navigate("/");
+      return;
     }
-  }, [doctorId, navigate]);
+    setHospitalData(JSON.parse(storedHospitalData));
+  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -98,86 +109,79 @@ export const DoctorVerification = () => {
       qualifications: prev.qualifications.filter((_, i) => i !== index),
     }));
 
-  // add affiliation handlers
+  // handle affiliation changes
   const handleAffiliationChange = (index, field, value) => {
     setFormData((prev) => {
-      const affs = Array.isArray(prev.clinicHospitalAffiliations)
-        ? [...prev.clinicHospitalAffiliations]
-        : [];
-      affs[index] = { ...affs[index], [field]: value };
-      return { ...prev, clinicHospitalAffiliations: affs };
+      const affiliations = [...prev.clinicHospitalAffiliations];
+      affiliations[index] = { ...affiliations[index], [field]: value };
+      return { ...prev, clinicHospitalAffiliations: affiliations };
     });
   };
 
-  const addAffiliation = () => {
+  const addAffiliation = () =>
     setFormData((prev) => ({
       ...prev,
       clinicHospitalAffiliations: [
-        ...(Array.isArray(prev.clinicHospitalAffiliations) ? prev.clinicHospitalAffiliations : []),
-        { name: "", city: "", state: "", startDate: "", endDate: "", designation: "" },
+        ...prev.clinicHospitalAffiliations,
+        { name: "", city: "", state: "", joinDate: "", designation: "" }
       ],
     }));
-  };
 
-  const removeAffiliation = (index) => {
+  const removeAffiliation = (index) =>
     setFormData((prev) => ({
       ...prev,
-      clinicHospitalAffiliations: (prev.clinicHospitalAffiliations || []).filter((_, i) => i !== index),
+      clinicHospitalAffiliations: prev.clinicHospitalAffiliations.filter((_, i) => i !== index),
+    }));
+
+  // handle location changes
+  // eslint-disable-next-line no-unused-vars
+  const handleLocationChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        [field]: value
+      }
     }));
   };
 
-  // Submit — send multipart/form-data with image files.
-  const handleSubmit = async (e) => {
+  // Submit and proceed to banking information
+  const handleSubmit = (e) => {
     e.preventDefault();
 
-    // client-side checks: ensure required image files provided
+    // Client-side checks for required files
     if (!profileImageFile) return toast.error("Profile image is required");
     if (!identityDocumentFile) return toast.error("Aadhaar image is required");
     if (!medicalCouncilCertificateFile) return toast.error("Medical council certificate image is required");
     if (!digitalSignatureFile) return toast.error("Digital signature certificate image is required");
     if (qualificationCertificateFiles.length === 0) return toast.error("At least one qualification certificate image is required");
 
-    const loadingToast = toast.loading("Submitting verification...");
-
-    try {
-      const url = `${import.meta.env.VITE_BACKEND_URL}/api/doctor/verify-doctor/?doctorId=${doctorId}`;
-      const fd = new FormData();
-
-      // Append scalar fields (stringify objects/arrays)
-      Object.keys(formData).forEach((key) => {
-        const val = formData[key];
-        if (val === undefined || val === null) return;
-        if (Array.isArray(val) || typeof val === 'object') {
-          fd.append(key, JSON.stringify(val));
-        } else {
-          fd.append(key, val);
-        }
-      });
-
-      // Append image files with names backend expects
-      fd.append('profileImage', profileImageFile);
-      fd.append('identityDocument', identityDocumentFile); // Aadhaar image
-      fd.append('medicalCouncilCertificate', medicalCouncilCertificateFile);
-      fd.append('digitalSignatureCertificate', digitalSignatureFile);
-      qualificationCertificateFiles.forEach((f) => fd.append('qualificationCertificates', f));
-
-      const res = await axios.post(url, fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      toast.dismiss(loadingToast);
-      if (res.data.success) {
-        toast.success("Verification submitted successfully!");
-        if (res.data.token) localStorage.setItem("doctorToken", res.data.token);
-        if (res.data.doctor) localStorage.setItem("user", JSON.stringify(res.data.doctor));
-        navigate("/doctor-dashboard");
-      } else {
-        toast.error(res.data.message || "Verification failed");
+    // Save doctor data and files to localStorage
+    const doctorData = {
+      ...formData,
+      files: {
+        profileImage: profileImageFile,
+        identityDocument: identityDocumentFile,
+        medicalCouncilCertificate: medicalCouncilCertificateFile,
+        digitalSignature: digitalSignatureFile,
+        qualificationCertificates: qualificationCertificateFiles
       }
-    } catch (err) {
-      toast.dismiss(loadingToast);
-      toast.error(err.response?.data?.message || "Verification submission failed");
-    }
+    };
+
+    localStorage.setItem('doctorData', JSON.stringify(doctorData));
+    
+    // Navigate to banking information page with files in state
+    navigate('/banking-information', { 
+      state: { 
+        files: {
+          profileImage: profileImageFile,
+          identityDocument: identityDocumentFile,
+          medicalCouncilCertificate: medicalCouncilCertificateFile,
+          digitalSignature: digitalSignatureFile,
+          qualificationCertificates: qualificationCertificateFiles
+        }
+      } 
+    });
   };
 
   return (

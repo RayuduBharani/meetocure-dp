@@ -8,7 +8,9 @@ const urlValidator = {
 
 const DoctorVerificationSchema = new mongoose.Schema({
   doctorId: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor", required: true },
-  fullName: String,
+
+  // Doctor Info
+  fullName: { type: String, required: true },
   gender: String,
   dateOfBirth: String,
   medicalCouncilRegistrationNumber: { type: String, required: true, unique: true },
@@ -31,66 +33,64 @@ const DoctorVerificationSchema = new mongoose.Schema({
     ],
     default: 'General'
   },
-  qualifications: [{
-    degree: String,
-    universityCollege: String,
-    year: String,
-  }],
+
+  // Education & Experience
+  qualifications: [
+    {
+      degree: String,
+      universityCollege: String,
+      year: String,
+    }
+  ],
+  qualificationCertificates: [String], // store file paths after upload
   experienceYears: String,
+
+  // Location
   location: {
     city: String,
-    state: String
-  },
-  clinicHospitalAffiliations: {
-    name: String,
-    city: String,
     state: String,
-    joinDate: String,
-    designation: String
   },
+
+  // Affiliations
+  clinicHospitalAffiliations: [
+    {
+      name: String,
+      city: String,
+      state: String,
+      joinDate: String,
+      designation: String,
+    }
+  ],
+
+  // Government IDs
   aadhaarNumber: { type: String, unique: true, sparse: true },
   panNumber: { type: String, unique: true, sparse: true },
 
-  // Aadhaar image (identity document) — required and must be image URL
-  identityDocumentUrl: {
-    type: String,
-    required: true,
-    validate: urlValidator
-  },
+  // Files (store paths/filenames after multer/cloud upload)
+  profileImage: { type: String, required: true },
+  identityDocument: { type: String, required: true },
+  medicalCouncilCertificate: { type: String, required: true },
+  digitalSignatureCertificate: { type: String, required: true },
 
-  // Medical council certificate image URL (required)
-  medicalCouncilCertificateUrl: {
-    type: String,
-    required: true,
-    validate: urlValidator
-  },
+  // Hospital Information
+  hospitalInfo: [{
+    hospitalName: { type: String, required: true },
+    hospitalAddress: { type: String, required: true },
+    contactNumber: { type: String, required: true },
+  }],
 
-  // Qualification certificates must be image URLs
-  qualificationCertificatesUrls: {
-    type: [String],
-    required: true,
-    validate: {
-      validator: function(arr) {
-        if (!Array.isArray(arr) || arr.length === 0) return false;
-        return arr.every(v => urlImageRegex.test(v));
-      },
-      message: 'qualificationCertificatesUrls must be an array of image URLs (jpg|jpeg|png|gif)'
-    }
-  },
+  // Banking Information
+  bankingInfo: [{
+    bankName: { type: String, required: true },
+    accountNumber: { type: String, required: true },
+    ifscCode: { type: String, required: true },
+    accountHolderName: { type: String, required: true },
+    bankBranch: { type: String, required: true },
+  }],
 
-  // Digital signature certificate should be an image URL now (required)
-  digitalSignatureCertificateUrl: {
-    type: String,
-    required: true,
-    validate: urlValidator
-  },
-
-  profileImage: {
-    type: String,
-    required: true,
-    validate: urlValidator
-  },
-  verified: { type: Boolean, default: false }
+  verified: { type: Boolean, default: false },
+}, {
+  timestamps: true
 });
 
 module.exports = mongoose.model("DoctorVerification", DoctorVerificationSchema);

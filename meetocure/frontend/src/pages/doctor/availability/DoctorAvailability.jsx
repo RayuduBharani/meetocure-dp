@@ -26,8 +26,10 @@ const DoctorAvailability = () => {
           return;
         }
 
+        const base = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+        console.log("Fetching availability from:", `${base}/api/availability/${doctorId}`);
         const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/availability/${doctorId}`,
+          `${base}/api/availability/${doctorId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -39,7 +41,13 @@ const DoctorAvailability = () => {
         setAvailability(res.data.days || []);
       } catch (err) {
         console.error("Fetch availability error:", err);
-        toast.error("Failed to fetch availability");
+        console.error("Error details:", {
+          message: err.message,
+          response: err.response?.data,
+          status: err.response?.status,
+          url: err.config?.url
+        });
+        toast.error(err.response?.data?.message || err.message || "Failed to fetch availability");
         setAvailability([]);
       } finally {
         setLoading(false);

@@ -122,7 +122,7 @@ const ChooseRoleScreen = () => {
               className="w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 text-white bg-[#004B5C] rounded-full font-semibold text-sm sm:text-base shadow hover:bg-[#003246] transition-all duration-200 active:scale-95"
             >
              <FaUserMd className="w-4 h-4 sm:w-4 sm:h-4" />
-              Hospital
+              Doctor
             </button>
           </div>
         </div>

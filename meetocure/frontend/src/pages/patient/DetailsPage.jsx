@@ -102,18 +102,18 @@ const DetailsPage = () => {
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <FaUser className="mx-auto text-cyan-800 mb-2" />
-              <div className="font-bold text-gray-800">{doctor.patients || 0}</div>
-              <div className="text-xs text-gray-500">patients</div>
+              <div className="font-bold text-gray-800">{doctor.hospitalInfo?.[0]?.hospitalName ? "Available" : "N/A"}</div>
+              <div className="text-xs text-gray-500">hospital</div>
             </div>
             <div>
               <FaCalendarAlt className="mx-auto text-cyan-800 mb-2" />
-              <div className="font-bold text-gray-800">{doctor.experienceYears || 0}</div>
+              <div className="font-bold text-gray-800">{doctor.experienceYears || "N/A"}</div>
               <div className="text-xs text-gray-500">experience</div>
             </div>
             <div>
               <FaStar className="mx-auto text-cyan-800 mb-2" />
-              <div className="font-bold text-gray-800">{doctor.rating || 0}</div>
-              <div className="text-xs text-gray-500">rating</div>
+              <div className="font-bold text-gray-800">{doctor.verified ? "Verified" : "Pending"}</div>
+              <div className="text-xs text-gray-500">status</div>
             </div>
           </div>
         </div>
@@ -122,7 +122,7 @@ const DetailsPage = () => {
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
           <h2 className="text-lg font-bold text-gray-800 mb-3">About me</h2>
           <p className="text-gray-600 leading-relaxed">
-            {doctor.about || "No additional details provided."}
+            {doctor.additionalSpecializations || "No additional details provided."}
           </p>
         </div>
 
@@ -132,11 +132,11 @@ const DetailsPage = () => {
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <FaPhone className="text-cyan-800 w-4 h-4" />
-              <span>{doctor.contact || "N/A"}</span>
+              <span>{doctor.hospitalInfo?.[0]?.contactNumber || "N/A"}</span>
             </div>
             <div className="flex items-center gap-3">
               <FaMapMarkerAlt className="text-cyan-800 w-4 h-4" />
-              <span>{doctor.location || "N/A"}</span>
+              <span>{doctor.location ? `${doctor.location.city}, ${doctor.location.state}` : "N/A"}</span>
             </div>
           </div>
         </div>
