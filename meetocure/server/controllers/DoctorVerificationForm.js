@@ -20,9 +20,9 @@ const uploadBufferToCloudinary = (buffer, folder, filename) => {
 
 const verifyDoctor = async (req, res) => {
   try {
-    console.log("Doctor Verification Request: files:", Object.keys(req.files || {}));
-    console.log("Request body keys:", Object.keys(req.body || {}));
-    console.log("Query params:", req.query);
+    // console.log("Doctor Verification Request: files:", Object.keys(req.files || {}));
+    // console.log("Request body keys:", Object.keys(req.body || {}));
+    // console.log("Query params:", req.query);
     console.log("Sample body data:", {
       profileImage: req.body.profileImage,
       identityDocument: req.body.identityDocument,

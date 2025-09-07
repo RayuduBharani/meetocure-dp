@@ -13,7 +13,6 @@ import {
 } from "react-icons/fa";
 import TopIcons from "../../../components/PatientTopIcons";
 import LogoutModal from "../../../components/LogoutModal";
-import profileImg from "/assets/doc_profile.png";
 import { motion } from "framer-motion";
 import { API_BASE_URL } from "../../../lib/config";
 
@@ -30,9 +29,7 @@ const options = [
 const PatientProfilePage = () => {
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [profileImage, setProfileImage] = useState(() =>
-    localStorage.getItem("patientProfileImage") || profileImg
-  );
+
 
   const [patientInfo, setPatientInfo] = useState({ name: "", phone: "" });
 
@@ -40,7 +37,7 @@ const PatientProfilePage = () => {
     const fetchPatientInfo = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`${API_BASE_URL}/api/patient/profile`, {
+        const res = await fetch(`${API_BASE_URL}/api/patient/profile/get`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -49,6 +46,7 @@ const PatientProfilePage = () => {
         setPatientInfo({
           name: data.name,
           phone: data.phone,
+          profileImage: data.photo || " ",
         });
       } catch (error) {
         console.error("Failed to fetch patient info:", error);
@@ -58,17 +56,7 @@ const PatientProfilePage = () => {
     fetchPatientInfo();
   }, []);
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result);
-        localStorage.setItem("patientProfileImage", reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+
 
   const handleOptionClick = (path) => {
     if (path === "logout") {
@@ -99,25 +87,17 @@ const PatientProfilePage = () => {
       >
         <div className="relative mb-4">
           <img
-            src={profileImage}
+            src={patientInfo.profileImage || ""}
             alt="Profile"
             className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md"
           />
-          <label className="absolute bottom-2 right-2 bg-[#0A4D68] p-1.5 rounded-full cursor-pointer">
-            <FaEdit className="text-white text-sm" />
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="hidden"
-            />
-          </label>
+         
         </div>
         <h2 className="text-xl font-semibold text-[#0A4D68] mb-1">
-          {patientInfo.name || "Loading..."}
+          {patientInfo.name || "loading..."}
         </h2>
         <p className="text-[#6B7280] mb-6">
-          {patientInfo.phone ? `+91 ${patientInfo.phone}` : "Loading..."}
+          {patientInfo.phone ? `${patientInfo.phone}` : "Loading..."}
         </p>
       </motion.div>
 

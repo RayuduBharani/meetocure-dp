@@ -8,6 +8,14 @@ export default function PatientAppointView() {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   
+  // New: bookings state
+  const [bookings, setBookings] = useState([]);
+  const [bookingsByDate, setBookingsByDate] = useState({});
+  const [nextAppointment, setNextAppointment] = useState(null);
+  const [todaysBookings, setTodaysBookings] = useState([]);
+  const [loadingBookings, setLoadingBookings] = useState(true);
+  const [bookingsError, setBookingsError] = useState(null);
+  
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
@@ -21,22 +29,124 @@ export default function PatientAppointView() {
     setAppointment({ date, time });
   }, []);
 
+  // helper: parse time string like "10:30 AM" to {hours, minutes}
+  const parseTime = (timeStr) => {
+    if (!timeStr) return { hours: 0, minutes: 0 };
+    const parts = timeStr.trim().split(" ");
+    const hm = parts[0].split(":").map(Number);
+    let hours = hm[0];
+    const minutes = hm[1] || 0;
+    const period = parts[1]?.toUpperCase();
+    if (period === "PM" && hours !== 12) hours += 12;
+    if (period === "AM" && hours === 12) hours = 0;
+    return { hours, minutes };
+  };
+
+  // Fetch patient's bookings and compute maps / next / today
+  useEffect(() => {
+    const fetchBookings = async () => {
+      setLoadingBookings(true);
+      setBookingsError(null);
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setBookingsError("Not authenticated");
+          setBookings([]);
+          setBookingsByDate({});
+          setTodaysBookings([]);
+          setNextAppointment(null);
+          setLoadingBookings(false);
+          return;
+        }
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/appointments/my`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(txt || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        const items = Array.isArray(data.appointments) ? data.appointments : [];
+
+        // Build bookingsByDate keyed by date.toDateString()
+        const byDate = {};
+        items.forEach((b) => {
+          const d = new Date(b.date);
+          const key = d.toDateString();
+          if (!byDate[key]) byDate[key] = [];
+          byDate[key].push(b);
+        });
+
+        // Sort each day's bookings by time
+        Object.keys(byDate).forEach((k) => {
+          byDate[k].sort((a, b) => {
+            const ta = parseTime(a.time);
+            const tb = parseTime(b.time);
+            return ta.hours * 60 + ta.minutes - (tb.hours * 60 + tb.minutes);
+          });
+        });
+
+        // Find next upcoming appointment (status not Cancelled)
+        const now = new Date();
+        let next = null;
+        let nextDt = null;
+        items.forEach((b) => {
+          if (b.status === "Cancelled") return;
+          const d = new Date(b.date);
+          const { hours, minutes } = parseTime(b.time || "");
+          d.setHours(hours, minutes, 0, 0);
+          if (d >= now) {
+            if (!nextDt || d < nextDt) {
+              nextDt = d;
+              next = b;
+            }
+          }
+        });
+
+        const todayKey = new Date().toDateString();
+        const todays = byDate[todayKey] || [];
+
+        setBookings(items);
+        setBookingsByDate(byDate);
+        setNextAppointment(next || null);
+        setTodaysBookings(todays);
+        // also update appointment state used by calendar highlight (prefer next)
+        if (next) {
+          setAppointment({ date: next.date, time: next.time });
+        } else if (items.length > 0) {
+          // fallback to first booking
+          setAppointment({ date: items[0].date, time: items[0].time });
+        } else {
+          setAppointment({ date: null, time: null });
+        }
+      } catch (err) {
+        console.error("Failed to load bookings:", err);
+        setBookingsError(err.message || "Failed to load bookings");
+        setBookings([]);
+        setBookingsByDate({});
+        setTodaysBookings([]);
+        setNextAppointment(null);
+      } finally {
+        setLoadingBookings(false);
+      }
+    };
+
+    fetchBookings();
+  }, []);
+
   const appointmentDateObj = appointment.date ? new Date(appointment.date) : null;
   const today = new Date();
   
-  // Check if appointment has passed
+  // Check if appointment has passed (for single appointment shown)
   const isAppointmentPast = () => {
     if (!appointmentDateObj || !appointment.time) return false;
     
-    const [time, period] = appointment.time.split(' ');
-    const [hours, minutes] = time.split(':').map(Number);
-    let appointmentHours = hours;
-    
-    if (period === 'PM' && hours !== 12) appointmentHours += 12;
-    if (period === 'AM' && hours === 12) appointmentHours = 0;
-    
+    const { hours, minutes } = parseTime(appointment.time);
     const appointmentDateTime = new Date(appointmentDateObj);
-    appointmentDateTime.setHours(appointmentHours, minutes, 0, 0);
+    appointmentDateTime.setHours(hours, minutes, 0, 0);
     
     return appointmentDateTime < new Date();
   };
@@ -154,6 +264,11 @@ return (
                                         date && date.toDateString() === today.toDateString();
                                     const isPastDate = date && date < today && !isToday;
 
+                                    // show booking indicator if bookings exist for that date
+                                    const dayKey = date ? date.toDateString() : null;
+                                    const dayBookings = dayKey ? bookingsByDate[dayKey] : undefined;
+                                    const firstTime = dayBookings && dayBookings.length ? dayBookings[0].time : null;
+
                                     return (
                                         <div key={idx} className="relative">
                                             {date ? (
@@ -172,7 +287,12 @@ return (
                                                     >
                                                         {date.getDate()}
                                                     </div>
-                                                    {isAppointmentDate && (
+                                                    {firstTime && (
+                                                        <div className="mt-1 sm:mt-2 text-white text-[10px] sm:text-xs px-2 py-1 rounded-full shadow-sm bg-[#0A4D68]">
+                                                            {firstTime}
+                                                        </div>
+                                                    )}
+                                                    {isAppointmentDate && !firstTime && (
                                                         <div
                                                             className={`mt-1 sm:mt-2 text-white text-[10px] sm:text-xs px-2 py-1 rounded-full shadow-sm ${
                                                                 appointmentPassed
@@ -197,8 +317,40 @@ return (
 
                 {/* Appointment Details Sidebar - Now Second */}
                 <div className="space-y-6 order-1 lg:order-2">
-                    {/* Appointment Status Card */}
-                    {appointment.date && appointment.time ? (
+                    {/* If there are today's bookings, show them; else show next appointment; else show No Appointments */}
+                    {loadingBookings ? (
+                      <div className="bg-white rounded-3xl shadow-xl p-4 sm:p-8 border border-gray-100 text-center">
+                        <p className="text-sm text-gray-500">Loading appointments...</p>
+                      </div>
+                    ) : todaysBookings.length > 0 ? (
+                      <div className="bg-white rounded-3xl shadow-xl p-4 sm:p-8 border border-gray-100">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 rounded-full bg-[#0A4D68] flex items-center justify-center">
+                            <Calendar className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-bold text-[#0A4D68]">Today's Appointments</h3>
+                            <p className="text-sm text-gray-500">{new Date().toDateString()}</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          {todaysBookings.map((b) => (
+                            <div key={b._id} className="p-3 rounded-xl bg-gray-50 flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-semibold text-gray-800">{b.time}</p>
+                                <p className="text-xs text-gray-500">{b.doctor?.name ? `Dr. ${b.doctor.name}` : "Doctor not assigned"}</p>
+                              </div>
+                              <div className="text-right">
+                                <span className={`px-2 py-1 text-xs rounded-full font-medium ${b.status === "Upcoming" ? "bg-green-100 text-green-700" : b.status === "Completed" ? "bg-gray-100 text-gray-700" : "bg-red-100 text-red-700"}`}>
+                                  {b.status}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : nextAppointment && nextAppointment.date && nextAppointment.time ? (
                         <div className="bg-white rounded-3xl shadow-xl p-4 sm:p-8 border border-gray-100">
                             <div className="flex items-center gap-3 mb-6">
                                 <div
@@ -248,7 +400,7 @@ return (
                                                 appointmentPassed ? "text-gray-600" : "text-gray-800"
                                             }`}
                                         >
-                                            {appointment.date}
+                                            {nextAppointment.date}
                                         </p>
                                     </div>
                                 </div>
@@ -268,7 +420,7 @@ return (
                                                 appointmentPassed ? "text-gray-600" : "text-gray-800"
                                             }`}
                                         >
-                                            {appointment.time}
+                                            {nextAppointment.time}
                                         </p>
                                     </div>
                                 </div>
@@ -300,31 +452,45 @@ return (
                         </div>
                     )}
 
-                    {/* Quick Actions Card */}
+                    {/* Your Bookings Card (NEW) */}
                     <div className="bg-white rounded-3xl shadow-xl p-4 sm:p-8 border border-gray-100">
                         <h3 className="text-base sm:text-lg font-bold text-[#0A4D68] mb-4 sm:mb-6">
-                            Quick Actions
+                            Your Bookings
                         </h3>
 
-                        <div className="space-y-2 sm:space-y-3">
-                            <button className="w-full text-left p-3 sm:p-4 rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 sm:gap-3 group">
-                                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-[#0A4D68] transition-colors">
-                                    <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 group-hover:text-white" />
-                                </div>
+                        {loadingBookings ? (
+                          <p className="text-sm text-gray-500">Loading bookings...</p>
+                        ) : bookingsError ? (
+                          <p className="text-sm text-red-500">{bookingsError}</p>
+                        ) : bookings.length === 0 ? (
+                          <p className="text-sm text-gray-500">No bookings found.</p>
+                        ) : (
+                          <div className="space-y-3 max-h-64 overflow-auto">
+                            {bookings.map((b) => (
+                              <div key={b._id} className="p-3 rounded-lg bg-gray-50 flex items-start justify-between">
                                 <div>
-                                    <p className="font-medium text-gray-800 text-sm sm:text-base">
-                                        View All Appointments
-                                    </p>
-                                    <p className="text-xs sm:text-sm text-gray-500">
-                                        See your appointment history
-                                    </p>
+                                  <p className="text-sm font-medium text-gray-800">
+                                    {b.date} • {b.time}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {b.doctor?.name ? `Dr. ${b.doctor.name}` : "Doctor not assigned"} • {b.patientInfo?.name || "You"}
+                                  </p>
                                 </div>
-                            </button>
-                        </div>
+                                <div className="text-right">
+                                  <span className={`px-2 py-1 text-xs rounded-full font-medium ${b.status === "Upcoming" ? "bg-green-100 text-green-700" : b.status === "Completed" ? "bg-gray-100 text-gray-700" : "bg-red-100 text-red-700"}`}>
+                                    {b.status}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                     </div>
+
+
                 </div>
             </div>
         </div>
-    </div>
+ </div>
 );
 }

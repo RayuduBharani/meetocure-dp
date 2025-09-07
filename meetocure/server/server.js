@@ -48,7 +48,7 @@ app.use("/api/availability", require("./routes/availabilityRoutes"));
 app.use("/api/chat", require("./routes/chatRoutes"));
 app.use("/api/search", require("./routes/searchRoutes"));
 app.use("/api/doc&hosp", require("./routes/doc&hospRoutes"));
-app.use("/api/patient", require("./routes/patientRoutes"));
+app.use("/api/patient/profile", require("./routes/patientProfileRoutes"));
 
 app.get("/", (req, res) => {
   res.send("API is Working");

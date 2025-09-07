@@ -95,11 +95,11 @@ function App() {
         {/* Patient Routes */}
         {/* <Route element={<PrivateRoute allowedRoles={['patient']} />}> */}
         <Route path="/patient-dashboard" element={<PatientDashboard />} />
-        <Route path="/patient/profile" element={<PatientProfilePage />} />
-        <Route path="/patient/profile/edit" element={<PatientEditProfile />} />
+        <Route path="/patient/profile" element={<PatientProfilePage />} /> //....
+        <Route path="/patient/profile/edit" element={<PatientEditProfile />} />// ....
         <Route path="/patient/settings" element={<PatientSettings />} />
         <Route path="/patient/notifications" element={<Notifications />} />
-        <Route path="/patient/calendar" element={<PatientAppointView />} />
+        <Route path="/patient/calendar" element={<PatientAppointView />} /> //....
         <Route path="/patient/emergency-contact" element={<PatientSos />} />
         <Route path="/patient/help" element={<Help />} />
         <Route path="/patient/terms" element={<Terms />} />
