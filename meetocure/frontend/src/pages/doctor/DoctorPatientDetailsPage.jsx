@@ -20,9 +20,11 @@ import TopIcons from "../../components/TopIcons";
 const DoctorPatientDetailsPage = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
+  console.log(state);
   const appt = state?.appt;
   // Extract patient data with fallbacks
   const patient = appt?.patientInfo || appt?.patient || {};
+  console.log(appt)
   
   // Use sample user icon for all patients
   const getUserImage = () => {

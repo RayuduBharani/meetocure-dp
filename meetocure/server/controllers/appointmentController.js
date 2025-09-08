@@ -154,7 +154,10 @@ const getDoctorAppointments = async (req, res) => {
       reason: a.reason || a.patientInfo?.reason || "",
       date: a.appointment_date, // keep date if frontend needs it for calendar
       patientInfo: a.patientInfo || {}, // Include full patient info
-      patient: a.patient || {} // Include patient data for fallback
+      patient: a.patient || {} ,// Include patient data for fallback
+      medicalRecords: a.medicalRecords || [],
+      createdAt: a.createdAt,
+      payment: a.payment || { amount: 0, currency: "USD", status: "pending" }
     }));
     // console.log(minimal);
 
