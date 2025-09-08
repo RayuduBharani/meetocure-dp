@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaPencilAlt, FaPlus, FaTrash } from "react-icons/fa";
 import TopIcons from "../../../components/TopIcons";
-import profileImg from "/assets/doc_profile.png";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { API_BASE_URL } from "../../../lib/config";
@@ -11,34 +10,15 @@ const EditProfile = () => {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    // Header
-    profileImage: profileImg,
     fullName: "",
     primarySpecialization: "",
-    verified: false,
-
-    // Overview
     category: "",
     experienceYears: "",
-
-    // Personal Information
     gender: "",
     dateOfBirth: "",
-    medicalCouncilRegistrationNumber: "",
-    medicalCouncilName: "",
-    yearOfRegistration: "",
-    additionalSpecializations: "",
-    aadhaarNumber: "",
-    panNumber: "",
-
-    // Lists
-    qualifications: [], // { degree, universityCollege, year }
+    profileImage: "",
     hospitalInfo: [], // { hospitalName, hospitalAddress, contactNumber }
     bankingInfo: [], // { bankName, bankBranch, accountHolderName, accountNumber, ifscCode }
-
-    // Documents
-    identityDocument: "",
-    medicalCouncilCertificate: "",
   });
 
   const [loading, setLoading] = useState(true);
@@ -55,25 +35,15 @@ const EditProfile = () => {
         const data = res.data || {};
         setForm((prev) => ({
           ...prev,
-          profileImage: data.profileImage || profileImg,
           fullName: data.fullName || "",
           primarySpecialization: data.primarySpecialization || "",
-          verified: !!data.verified,
           category: data.category || "",
           experienceYears: data.experienceYears?.toString?.() || "",
           gender: data.gender || "",
           dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString().slice(0, 10) : "",
-          medicalCouncilRegistrationNumber: data.medicalCouncilRegistrationNumber || "",
-          medicalCouncilName: data.medicalCouncilName || "",
-          yearOfRegistration: data.yearOfRegistration?.toString?.() || "",
-          additionalSpecializations: data.additionalSpecializations || "",
-          aadhaarNumber: data.aadhaarNumber || "",
-          panNumber: data.panNumber || "",
-          qualifications: Array.isArray(data.qualifications) ? data.qualifications : [],
+          profileImage: data.profileImage || "",
           hospitalInfo: Array.isArray(data.hospitalInfo) ? data.hospitalInfo : [],
           bankingInfo: Array.isArray(data.bankingInfo) ? data.bankingInfo : [],
-          identityDocument: data.identityDocument || "",
-          medicalCouncilCertificate: data.medicalCouncilCertificate || "",
         }));
       } catch (err) {
         const status = err?.response?.status;
@@ -99,11 +69,14 @@ const EditProfile = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const onImagePick = (name) => (e) => {
+  const onImagePick = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
     const reader = new FileReader();
-    reader.onloadend = () => updateField(name, reader.result);
+    reader.onloadend = () => {
+      updateField("profileImage", reader.result);
+    };
     reader.readAsDataURL(file);
   };
 
@@ -131,22 +104,48 @@ const EditProfile = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("doctorToken");
-      const payload = { ...form };
+      
+      // Prepare form data for file upload
+      const payload = {
+        fullName: form.fullName,
+        primarySpecialization: form.primarySpecialization,
+        category: form.category,
+        experienceYears: form.experienceYears,
+        gender: form.gender,
+        dateOfBirth: form.dateOfBirth,
+        hospitalInfo: form.hospitalInfo,
+        bankingInfo: form.bankingInfo,
+      };
 
-      await toast.promise(
-        axios.put(`${API_BASE_URL}/api/doctor/profile/update`, payload, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }),
-        {
-          loading: "Updating profile...",
-          success: "Profile updated successfully!",
-          error: "Failed to update profile",
-        }
-      );
+      // Add profile image if it exists and is changed
+      if (form.profileImage && form.profileImage.startsWith('data:image')) {
+        payload.profileImage = form.profileImage;
+      }
 
-      navigate("/doctor/profile");
-    } catch (_) {
-      // handled by toast
+      try {
+        await toast.promise(
+          axios.put(`${API_BASE_URL}/api/doctor/profile`, payload, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }),
+          {
+            loading: "Updating profile...",
+            success: "Profile updated successfully!",
+            error: "Failed to update profile"
+          }
+        );
+
+        navigate("/doctor/profile");
+      } catch (err) {
+        console.error("Error details:", err.response?.data);
+        const errorMessage = err.response?.data?.message || "Failed to update profile";
+        toast.error(errorMessage);
+      }
+    } catch (err) {
+      console.error("Profile update error:", err);
+      toast.error("Failed to update profile");
     }
   };
 
@@ -168,45 +167,96 @@ const EditProfile = () => {
         <TopIcons />
       </div>
 
-      {/* Header - Profile Image and basic info */}
-      <div className="bg-white border rounded-2xl shadow-sm p-6 mb-8 max-w-4xl mx-auto">
-        <div className="flex flex-col items-center">
-          <div className="rounded-full p-1 bg-white shadow-xl relative">
-            <img src={form.profileImage || profileImg} alt="Doctor" className="w-32 h-32 object-cover rounded-full border-4 border-white shadow-inner" />
-            <label className="absolute -bottom-2 -right-2 bg-[#0A4D68] p-2 rounded-full cursor-pointer shadow-md">
-              <FaPencilAlt className="text-white text-sm" />
-              <input type="file" accept="image/*" onChange={onImagePick("profileImage")} className="hidden" />
-            </label>
+      <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl mx-auto">
+        {/* Profile Image */}
+        <section className="bg-white border rounded-2xl shadow-sm p-6">
+          <div className="flex flex-col items-center">
+            <div className="rounded-full p-1 bg-white shadow-xl relative w-32 h-32">
+              <img 
+                src={form.profileImage || "/assets/doc_profile.png"} 
+                alt="Profile" 
+                className="w-full h-full object-cover rounded-full border-4 border-white shadow-inner" 
+              />
+              <label className="absolute -bottom-2 -right-2 bg-[#0A4D68] p-2 rounded-full cursor-pointer shadow-md">
+                <FaPencilAlt className="text-white text-sm" />
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={onImagePick} 
+                  className="hidden" 
+                />
+              </label>
+            </div>
           </div>
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+        </section>
+
+        {/* Basic Information */}
+        <section className="bg-white border rounded-2xl shadow-sm p-6">
+          <h2 className="text-lg font-semibold mb-4">Basic Information</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-              <input type="text" value={form.fullName} onChange={(e) => updateField("fullName", e.target.value)} className="w-full border rounded-lg px-3 py-2" placeholder="Enter full name" />
+              <input 
+                type="text" 
+                value={form.fullName} 
+                onChange={(e) => updateField("fullName", e.target.value)} 
+                className="w-full border rounded-lg px-3 py-2" 
+                placeholder="Enter full name" 
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Primary Specialization</label>
-              <input type="text" value={form.primarySpecialization} onChange={(e) => updateField("primarySpecialization", e.target.value)} className="w-full border rounded-lg px-3 py-2" placeholder="e.g. Cardiology" />
+              <input 
+                type="text" 
+                value={form.primarySpecialization} 
+                onChange={(e) => updateField("primarySpecialization", e.target.value)} 
+                className="w-full border rounded-lg px-3 py-2" 
+                placeholder="e.g. Cardiology" 
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-              <input type="text" value={form.category} onChange={(e) => updateField("category", e.target.value)} className="w-full border rounded-lg px-3 py-2" placeholder="e.g. Doctor" />
+              <select 
+                value={form.category} 
+                onChange={(e) => updateField("category", e.target.value)} 
+                className="w-full border rounded-lg px-3 py-2"
+              >
+                <option value="">Select Category</option>
+                <option value="General">General</option>
+                <option value="Cardiology">Cardiology</option>
+                <option value="Dentistry">Dentistry</option>
+                <option value="Pulmonology">Pulmonology</option>
+                <option value="Neurology">Neurology</option>
+                <option value="Gastroenterology">Gastroenterology</option>
+                <option value="Laboratory">Laboratory</option>
+                <option value="Vaccination">Vaccination</option>
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Experience (years)</label>
-              <input type="number" min="0" value={form.experienceYears} onChange={(e) => updateField("experienceYears", e.target.value)} className="w-full border rounded-lg px-3 py-2" placeholder="e.g. 5" />
+              <input 
+                type="number" 
+                min="0" 
+                value={form.experienceYears} 
+                onChange={(e) => updateField("experienceYears", e.target.value)} 
+                className="w-full border rounded-lg px-3 py-2" 
+                placeholder="e.g. 5" 
+              />
             </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Personal Information */}
-      <form onSubmit={handleSubmit} className="space-y-8 max-w-5xl mx-auto">
+        {/* Personal Information */}
         <section className="bg-white border rounded-2xl shadow-sm p-6">
           <h2 className="text-lg font-semibold mb-4">Personal Information</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-              <select value={form.gender} onChange={(e) => updateField("gender", e.target.value)} className="w-full border rounded-lg px-3 py-2">
+              <select 
+                value={form.gender} 
+                onChange={(e) => updateField("gender", e.target.value)} 
+                className="w-full border rounded-lg px-3 py-2"
+              >
                 <option value="">Select</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
@@ -215,102 +265,73 @@ const EditProfile = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-              <input type="date" value={form.dateOfBirth} onChange={(e) => updateField("dateOfBirth", e.target.value)} className="w-full border rounded-lg px-3 py-2" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Medical Council Reg. No</label>
-              <input type="text" value={form.medicalCouncilRegistrationNumber} onChange={(e) => updateField("medicalCouncilRegistrationNumber", e.target.value)} className="w-full border rounded-lg px-3 py-2" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Medical Council Name</label>
-              <input type="text" value={form.medicalCouncilName} onChange={(e) => updateField("medicalCouncilName", e.target.value)} className="w-full border rounded-lg px-3 py-2" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Year of Registration</label>
-              <input type="number" min="1900" max="2100" value={form.yearOfRegistration} onChange={(e) => updateField("yearOfRegistration", e.target.value)} className="w-full border rounded-lg px-3 py-2" />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Additional Specializations</label>
-              <input type="text" value={form.additionalSpecializations} onChange={(e) => updateField("additionalSpecializations", e.target.value)} className="w-full border rounded-lg px-3 py-2" placeholder="Comma-separated" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Aadhaar</label>
-              <input type="text" value={form.aadhaarNumber} onChange={(e) => updateField("aadhaarNumber", e.target.value)} className="w-full border rounded-lg px-3 py-2" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">PAN</label>
-              <input type="text" value={form.panNumber} onChange={(e) => updateField("panNumber", e.target.value)} className="w-full border rounded-lg px-3 py-2" />
+              <input 
+                type="date" 
+                value={form.dateOfBirth} 
+                onChange={(e) => updateField("dateOfBirth", e.target.value)} 
+                className="w-full border rounded-lg px-3 py-2" 
+              />
             </div>
           </div>
-        </section>
-
-        {/* Qualifications */}
-        <section className="bg-white border rounded-2xl shadow-sm p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Education & Qualifications</h2>
-            <button type="button" onClick={() => addListItem("qualifications", { degree: "", universityCollege: "", year: "" })} className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#0A4D68] text-white text-sm">
-              <FaPlus /> Add
-            </button>
-          </div>
-          {form.qualifications?.length ? (
-            <div className="space-y-4">
-              {form.qualifications.map((q, idx) => (
-                <div key={idx} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
-                  <div className="sm:col-span-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Degree</label>
-                    <input type="text" value={q.degree || ""} onChange={(e) => updateListItem("qualifications", idx, "degree", e.target.value)} className="w-full border rounded-lg px-3 py-2" />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">University/College</label>
-                    <input type="text" value={q.universityCollege || ""} onChange={(e) => updateListItem("qualifications", idx, "universityCollege", e.target.value)} className="w-full border rounded-lg px-3 py-2" />
-                  </div>
-                  <div className="sm:col-span-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
-                    <input type="number" value={q.year || ""} onChange={(e) => updateListItem("qualifications", idx, "year", e.target.value)} className="w-full border rounded-lg px-3 py-2" />
-                  </div>
-                  <button type="button" onClick={() => removeListItem("qualifications", idx)} className="justify-self-start sm:justify-self-end text-red-600 p-2">
-                    <FaTrash />
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500">No qualifications added</p>
-          )}
         </section>
 
         {/* Hospital Info */}
         <section className="bg-white border rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Hospital Information</h2>
-            <button type="button" onClick={() => addListItem("hospitalInfo", { hospitalName: "", hospitalAddress: "", contactNumber: "" })} className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#0A4D68] text-white text-sm">
-              <FaPlus /> Add
+            <button 
+              type="button" 
+              onClick={() => addListItem("hospitalInfo", { hospitalName: "", hospitalAddress: "", contactNumber: "" })} 
+              className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#0A4D68] text-white text-sm"
+            >
+              <FaPlus /> Add Hospital
             </button>
           </div>
           {form.hospitalInfo?.length ? (
             <div className="space-y-4">
               {form.hospitalInfo.map((h, idx) => (
-                <div key={idx} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                <div key={idx} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end border rounded-lg p-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Hospital Name</label>
-                    <input type="text" value={h.hospitalName || ""} onChange={(e) => updateListItem("hospitalInfo", idx, "hospitalName", e.target.value)} className="w-full border rounded-lg px-3 py-2" />
+                    <input 
+                      type="text" 
+                      value={h.hospitalName || ""} 
+                      onChange={(e) => updateListItem("hospitalInfo", idx, "hospitalName", e.target.value)} 
+                      className="w-full border rounded-lg px-3 py-2" 
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                    <input type="text" value={h.hospitalAddress || ""} onChange={(e) => updateListItem("hospitalInfo", idx, "hospitalAddress", e.target.value)} className="w-full border rounded-lg px-3 py-2" />
+                    <input 
+                      type="text" 
+                      value={h.hospitalAddress || ""} 
+                      onChange={(e) => updateListItem("hospitalInfo", idx, "hospitalAddress", e.target.value)} 
+                      className="w-full border rounded-lg px-3 py-2" 
+                    />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Contact</label>
-                    <input type="text" value={h.contactNumber || ""} onChange={(e) => updateListItem("hospitalInfo", idx, "contactNumber", e.target.value)} className="w-full border rounded-lg px-3 py-2" />
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Contact</label>
+                      <input 
+                        type="text" 
+                        value={h.contactNumber || ""} 
+                        onChange={(e) => updateListItem("hospitalInfo", idx, "contactNumber", e.target.value)} 
+                        className="w-full border rounded-lg px-3 py-2" 
+                      />
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => removeListItem("hospitalInfo", idx)} 
+                      className="text-red-600 p-2 hover:bg-red-50 rounded-lg"
+                    >
+                      <FaTrash />
+                    </button>
                   </div>
-                  <button type="button" onClick={() => removeListItem("hospitalInfo", idx)} className="justify-self-start sm:justify-self-end text-red-600 p-2">
-                    <FaTrash />
-                  </button>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500">No hospital information</p>
+            <p className="text-sm text-gray-500 text-center py-4">No hospital information added</p>
           )}
         </section>
 
@@ -318,74 +339,96 @@ const EditProfile = () => {
         <section className="bg-white border rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Banking Information</h2>
-            <button type="button" onClick={() => addListItem("bankingInfo", { bankName: "", bankBranch: "", accountHolderName: "", accountNumber: "", ifscCode: "" })} className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#0A4D68] text-white text-sm">
-              <FaPlus /> Add
+            <button 
+              type="button" 
+              onClick={() => addListItem("bankingInfo", { 
+                bankName: "", 
+                bankBranch: "", 
+                accountHolderName: "", 
+                accountNumber: "", 
+                ifscCode: "" 
+              })} 
+              className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#0A4D68] text-white text-sm"
+            >
+              <FaPlus /> Add Bank Account
             </button>
           </div>
           {form.bankingInfo?.length ? (
             <div className="space-y-4">
               {form.bankingInfo.map((b, idx) => (
-                <div key={idx} className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
-                    <input type="text" value={b.bankName || ""} onChange={(e) => updateListItem("bankingInfo", idx, "bankName", e.target.value)} className="w-full border rounded-lg px-3 py-2" />
+                <div key={idx} className="border rounded-lg p-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+                      <input 
+                        type="text" 
+                        value={b.bankName || ""} 
+                        onChange={(e) => updateListItem("bankingInfo", idx, "bankName", e.target.value)} 
+                        className="w-full border rounded-lg px-3 py-2" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+                      <input 
+                        type="text" 
+                        value={b.bankBranch || ""} 
+                        onChange={(e) => updateListItem("bankingInfo", idx, "bankBranch", e.target.value)} 
+                        className="w-full border rounded-lg px-3 py-2" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Account Holder</label>
+                      <input 
+                        type="text" 
+                        value={b.accountHolderName || ""} 
+                        onChange={(e) => updateListItem("bankingInfo", idx, "accountHolderName", e.target.value)} 
+                        className="w-full border rounded-lg px-3 py-2" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                      <input 
+                        type="text" 
+                        value={b.accountNumber || ""} 
+                        onChange={(e) => updateListItem("bankingInfo", idx, "accountNumber", e.target.value)} 
+                        className="w-full border rounded-lg px-3 py-2" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">IFSC Code</label>
+                      <input 
+                        type="text" 
+                        value={b.ifscCode || ""} 
+                        onChange={(e) => updateListItem("bankingInfo", idx, "ifscCode", e.target.value)} 
+                        className="w-full border rounded-lg px-3 py-2" 
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <button 
+                        type="button" 
+                        onClick={() => removeListItem("bankingInfo", idx)} 
+                        className="text-red-600 p-2 hover:bg-red-50 rounded-lg"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
-                    <input type="text" value={b.bankBranch || ""} onChange={(e) => updateListItem("bankingInfo", idx, "bankBranch", e.target.value)} className="w-full border rounded-lg px-3 py-2" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Account Holder</label>
-                    <input type="text" value={b.accountHolderName || ""} onChange={(e) => updateListItem("bankingInfo", idx, "accountHolderName", e.target.value)} className="w-full border rounded-lg px-3 py-2" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
-                    <input type="text" value={b.accountNumber || ""} onChange={(e) => updateListItem("bankingInfo", idx, "accountNumber", e.target.value)} className="w-full border rounded-lg px-3 py-2" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">IFSC</label>
-                    <input type="text" value={b.ifscCode || ""} onChange={(e) => updateListItem("bankingInfo", idx, "ifscCode", e.target.value)} className="w-full border rounded-lg px-3 py-2" />
-                  </div>
-                  <button type="button" onClick={() => removeListItem("bankingInfo", idx)} className="justify-self-start sm:justify-self-end text-red-600 p-2">
-                    <FaTrash />
-                  </button>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500">No banking details available</p>
+            <p className="text-sm text-gray-500 text-center py-4">No banking details added</p>
           )}
         </section>
 
-        {/* Documents */}
-        <section className="bg-white border rounded-2xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold mb-4">Documents</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div>
-              <p className="font-medium text-xs text-gray-600 mb-2">Identity Document</p>
-              <div className="w-full aspect-[4/3] border rounded-lg overflow-hidden bg-gray-50 relative">
-                <img src={form.identityDocument || profileImg} alt="Identity" className="w-full h-full object-cover" />
-                <label className="absolute bottom-2 right-2 bg-[#0A4D68] text-white px-3 py-1 rounded cursor-pointer text-xs">
-                  Change
-                  <input type="file" accept="image/*" onChange={onImagePick("identityDocument")} className="hidden" />
-                </label>
-              </div>
-            </div>
-            <div>
-              <p className="font-medium text-xs text-gray-600 mb-2">Medical Council Certificate</p>
-              <div className="w-full aspect-[4/3] border rounded-lg overflow-hidden bg-gray-50 relative">
-                <img src={form.medicalCouncilCertificate || profileImg} alt="Certificate" className="w-full h-full object-cover" />
-                <label className="absolute bottom-2 right-2 bg-[#0A4D68] text-white px-3 py-1 rounded cursor-pointer text-xs">
-                  Change
-                  <input type="file" accept="image/*" onChange={onImagePick("medicalCouncilCertificate")} className="hidden" />
-                </label>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <div className="max-w-5xl mx-auto">
-          <button type="submit" className="w-full mt-2 bg-[#0A4D68] text-white py-3 rounded-full font-semibold text-lg shadow-md hover:bg-[#083e54] transition">Save</button>
+        {/* Submit Button */}
+        <div>
+          <button 
+            type="submit" 
+            className="w-full bg-[#0A4D68] text-white py-3 rounded-full font-semibold text-lg shadow-md hover:bg-[#083e54] transition"
+          >
+            Save Changes
+          </button>
         </div>
       </form>
     </div>

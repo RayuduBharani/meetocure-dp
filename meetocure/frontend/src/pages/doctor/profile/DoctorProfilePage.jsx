@@ -17,10 +17,11 @@ import BottomNav from "../../../components/BottomNav";
 import TopIcons from "../../../components/TopIcons";
 import LogoutModal from "../../../components/LogoutModal";
 import profileImg from "/assets/doc_profile.png";
+// eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 
 const options = [
-  { icon: <FaUser />, label: "View Profile", path: "/doctor/profile-view"},
+  { icon: <FaUser />, label: "View Profile", path: "/doctor/profile-view" },
   { icon: <FaUserEdit />, label: "Edit Profile", path: "/doctor/profile/edit" },
   { icon: <FaNotify />, label: "Notifications", path: "/doctor/notifications" },
   { icon: <FaComments />, label: "Chat with AI", path: "/doctor/ai-chat" },
@@ -60,29 +61,28 @@ const DoctorProfilePage = () => {
     }
   };
 
-  const [doctorInfo, setDoctorInfo] = useState({ name: "", phone: "" });
+  const [doctorInfo, setDoctorInfo] = useState();
 
-useEffect(() => {
-  const fetchDoctorInfo = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE_URL}/api/doctor/profile`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await res.json();
-      setDoctorInfo({
-        name: data.name,
-        phone: data.phone,
-      });
-    } catch (error) {
-      console.error("Failed to fetch doctor info:", error);
-    }
-  };
+  useEffect(() => {
+    const fetchDoctorInfo = async () => {
+      try {
+        const token = localStorage.getItem("doctorToken");
+        console.log(token)
+        const res = await fetch(`${API_BASE_URL}/api/doctor/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+        setDoctorInfo(data);
+        console.log("Fetched doctor info:", data);
+      } catch (error) {
+        console.error("Failed to fetch doctor info:", error);
+      }
+    };
 
-  fetchDoctorInfo();
-}, []);
+    fetchDoctorInfo();
+  }, []);
 
 
   return (
@@ -108,7 +108,7 @@ useEffect(() => {
       >
         <div className="relative mb-4">
           <img
-            src={profileImage}
+            src={doctorInfo?.profileImage || profileImage}
             alt="Profile"
             className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md"
           />
@@ -123,12 +123,12 @@ useEffect(() => {
           </label>
         </div>
         <h2 className="text-xl font-semibold text-[#0A4D68] mb-1">
-          {doctorInfo.name || "Loading..."}
+          {doctorInfo?.fullName || "Loading..."}
         </h2>
         <p className="text-[#6B7280] mb-6">
-          {doctorInfo.phone ? `+91 ${doctorInfo.phone}` : "Loading..."}
+          {doctorInfo?.primarySpecialization || "Loading"}
         </p>
-  </motion.div>
+      </motion.div>
 
       {/* Profile Options */}
       <div className="max-w-3xl mx-auto px-6 mt-10 space-y-4">

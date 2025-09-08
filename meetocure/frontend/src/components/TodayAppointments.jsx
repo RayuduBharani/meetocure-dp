@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { FaCalendarAlt, FaClock, FaUser, FaVenusMars } from "react-icons/fa";
 import { API_BASE_URL } from "../lib/config";
 
-
-
 const UpcomingAppointments = () => {
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
@@ -14,10 +12,11 @@ const UpcomingAppointments = () => {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        const token = localStorage.getItem('doctorToken') || localStorage.getItem('token');
-        
+        const token =
+          localStorage.getItem("doctorToken") || localStorage.getItem("token");
+
         if (!token) {
-          setError('No authentication token found');
+          setError("No authentication token found");
           setLoading(false);
           return;
         }
@@ -26,30 +25,39 @@ const UpcomingAppointments = () => {
 
         const response = await fetch(url, {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         });
+
         if (!response.ok) {
           const errorText = await response.text();
-          
           if (response.status === 404) {
-            // No appointments found - this is normal for new doctors
             setAppointments([]);
           } else if (response.status === 401) {
-            setError('Authentication failed. Please log in again.');
+            setError("Authentication failed. Please log in again.");
           } else if (response.status === 403) {
-            setError('Access denied. You may not have permission to view appointments.');
+            setError("Access denied. You may not have permission to view appointments.");
           } else {
             setError(`Server error: ${response.status} - ${errorText}`);
           }
         } else {
           const data = await response.json();
-          setAppointments(Array.isArray(data) ? data : []);
+          console.log("Fetched appointments:", data);
+
+          // ✅ Handle both {appointments: [...]} and plain array
+          if (data.appointments && Array.isArray(data.appointments)) {
+            setAppointments(data.appointments);
+          } else if (Array.isArray(data)) {
+            setAppointments(data);
+          } else {
+            setAppointments([]);
+          }
         }
       } catch (err) {
-        setError('Failed to load appointments');
-        setAppointments([]); // Set empty array on error
+        console.error(err);
+        setError("Failed to load appointments");
+        setAppointments([]);
       } finally {
         setLoading(false);
       }
@@ -63,143 +71,106 @@ const UpcomingAppointments = () => {
 
   const handleCancel = async (appt) => {
     try {
-      const token = localStorage.getItem('doctorToken') || localStorage.getItem('token');
+      const token =
+        localStorage.getItem("doctorToken") || localStorage.getItem("token");
       if (!token) {
-        setError('No authentication token found');
+        setError("No authentication token found");
         return;
       }
 
-      // Confirm cancellation
       const confirmed = window.confirm(
-        `Are you sure you want to cancel the appointment with ${appt.patientInfo?.name} on ${appt.date} at ${appt.time}?`
+        `Are you sure you want to cancel the appointment with ${
+          appt.patientInfo?.name || appt.name
+        } on ${appt.date} at ${appt.time}?`
       );
 
-      if (!confirmed) {
-        return;
-      }
-
-
-      const response = await fetch(`${API_BASE_URL}/api/appointments/${appt._id}/cancel`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      if (!confirmed) return;
+      const response = await fetch(
+        `${API_BASE_URL}/api/appointments/${appt._id}/cancel`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-      });
+      );
 
       const data = await response.json();
+      console.log("Cancel response:", { status: response.status, data });
 
       if (response.ok && data.success) {
-        // Update the local state to reflect the cancellation
-        setAppointments(prevAppointments => 
-          prevAppointments.map(apt => 
-            apt._id === appt._id 
-              ? { ...apt, status: 'Cancelled' }
-              : apt
+        setAppointments((prevAppointments) =>
+          prevAppointments.map((apt) =>
+            apt._id === appt._id ? { ...apt, status: "cancelled" } : apt
           )
         );
-        
-        // Show success message
-        alert('Appointment cancelled successfully!');
+        alert("Appointment cancelled successfully!");
       } else {
-        throw new Error(data.message || 'Failed to cancel appointment');
+        throw new Error(data.message || "Failed to cancel appointment");
       }
     } catch (err) {
+      console.error("Error cancelling appointment:", err);
       alert(`Error cancelling appointment: ${err.message}`);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-gray-500">Loading appointments...</div>
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="w-12 h-12 mx-auto mb-4 bg-[#0A4D68]/10 rounded-full flex items-center justify-center">
+            <div className="w-6 h-6 border-2 border-[#0A4D68] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <p className="text-gray-500 text-sm">Loading appointments...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <div className="text-yellow-800 text-sm">
-          {error}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+        <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+          <div className="w-8 h-8 bg-red-500 rounded-full"></div>
         </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Appointments</h3>
+        <p className="text-red-600 text-sm">{error}</p>
       </div>
     );
   }
-
-  const createTestAppointment = async () => {
-    try {
-      const token = localStorage.getItem('doctorToken') || localStorage.getItem('token');
-      if (!token) {
-        alert('No authentication token found');
-        return;
-      }
-
-      const response = await fetch(`${API_BASE_URL}/api/appointments/test`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-      console.log('Test appointment creation response:', data);
-
-      if (response.ok && data.success) {
-        alert('Test appointment created successfully! Refresh the page to see it.');
-        // Refresh the appointments
-        window.location.reload();
-      } else {
-        alert(`Failed to create test appointment: ${data.message}`);
-      }
-    } catch (err) {
-      console.error('Error creating test appointment:', err);
-      alert(`Error creating test appointment: ${err.message}`);
-    }
-  };
 
   if (appointments.length === 0) {
     return (
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-        <FaCalendarAlt className="text-4xl text-blue-400 mx-auto mb-3" />
-        <h3 className="text-lg font-semibold text-blue-800 mb-2">No Upcoming Appointments</h3>
-        <p className="text-blue-600 text-sm mb-4">
-          You don't have any upcoming appointments scheduled. Check back later or set your availability.
-        </p>
-        
-        {/* Debug Information */}
-        <div className="mt-4 p-3 bg-gray-100 rounded text-left text-xs">
-          <p><strong>Debug Info:</strong></p>
-          <p>• Token found: {localStorage.getItem('doctorToken') || localStorage.getItem('token') ? 'Yes' : 'No'}</p>
-          <p>• API URL: {API_BASE_URL}/api/appointments/doctor</p>
-          <p>• Check browser console for detailed logs</p>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+        <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+          <FaCalendarAlt className="text-2xl text-gray-400" />
         </div>
-        
-        {/* Test Appointment Button */}
-        <button
-          onClick={createTestAppointment}
-          className="mt-3 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm"
-        >
-          Create Test Appointment
-        </button>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          No Upcoming Appointments
+        </h3>
+        <p className="text-gray-500 text-sm">
+          You don't have any upcoming appointments scheduled. Check back later
+          or set your availability.
+        </p>
       </div>
     );
   }
 
-  // Helper function to check if appointment is today, tomorrow, or upcoming
   const isToday = (date) => {
-    const today = new Date().toISOString().split('T')[0];
-    return date === today;
+    const today = new Date().toISOString().split("T")[0];
+    return date.startsWith(today);
   };
 
   const isTomorrow = (date) => {
-    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    return date === tomorrow;
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
+    return date.startsWith(tomorrow);
   };
 
   const isUpcoming = (date) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
     return date > today;
   };
 
@@ -208,67 +179,118 @@ const UpcomingAppointments = () => {
     const today = new Date();
     const diffTime = appointmentDate - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Tomorrow';
+
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Tomorrow";
     if (diffDays > 1) return `In ${diffDays} days`;
     return appointmentDate.toLocaleDateString();
   };
 
   return (
     <div className="grid md:grid-cols-2 gap-6">
-      {appointments.map((appt, index) => (
-          <div
-            key={index}
-            className="bg-white rounded-xl shadow-md p-5 flex flex-col justify-between"
-          >
-            <div className="flex justify-between text-[#0A4D68] font-medium mb-2">
-              <span className="flex items-center gap-2">
-                <FaCalendarAlt /> 
-                {appt.date}
-                {isToday(appt.date) && <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full ml-2">Today</span>}
-                {isTomorrow(appt.date) && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2">Tomorrow</span>}
-                {isUpcoming(appt.date) && <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full ml-2">{formatDate(appt.date)}</span>}
-              </span>
-              <span className="flex items-center gap-2">
-                <FaClock /> {appt.time}
-              </span>
+      {appointments.map((appt) => (
+        <div
+          key={appt._id}
+          className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-lg border border-white/20 p-6 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group"
+        >
+          {/* Date & Time Header */}
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-3 text-[#0A4D68]">
+              <div className="w-10 h-10 bg-gradient-to-r from-[#0A4D68]/10 to-blue-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <FaCalendarAlt className="text-sm" />
+              </div>
+              <span className="font-semibold">{new Date(appt.date).toLocaleDateString()}</span>
+              {isToday(appt.date) && (
+                <span className="text-xs bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 px-3 py-1 rounded-full font-semibold border border-green-200">
+                  Today
+                </span>
+              )}
+              {isTomorrow(appt.date) && (
+                <span className="text-xs bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 px-3 py-1 rounded-full font-semibold border border-blue-200">
+                  Tomorrow
+                </span>
+              )}
+              {isUpcoming(appt.date) && (
+                <span className="text-xs bg-gradient-to-r from-purple-100 to-violet-100 text-purple-800 px-3 py-1 rounded-full font-semibold border border-purple-200">
+                  {formatDate(appt.date)}
+                </span>
+              )}
             </div>
-            <div className="mb-3">
-              <p className="font-semibold text-lg">Patient Name : {appt.patientInfo?.name}</p>
-              <p className="text-sm flex items-center gap-2 mt-1">
-                <FaUser /> Age : {appt.patientInfo?.age}
-                <FaVenusMars /> Gender : {appt.patientInfo?.gender}
-              </p>
-              <p className="text-sm mt-1">Phone : {appt.patientInfo?.phone}</p>
-              <p className="text-sm mt-1">Reason : {appt.reason}</p>
-              <p className="text-sm mt-1">Status : <span className={`${
-                appt.status === "Completed" ? "text-green-500" : 
-                appt.status === "Cancelled" ? "text-red-500" : 
-                "text-yellow-500"
-              }`}>{appt.status}</span></p>
-            </div>
-            <div className="flex justify-between mt-2">
-              <button 
-                onClick={() => handleCancel(appt)}
-                className={`text-sm py-2 px-6 rounded-full ${
-                  appt.status === "Completed" || appt.status === "Cancelled" 
-                    ? "bg-gray-300 cursor-not-allowed text-gray-500" 
-                    : "bg-red-200 hover:bg-red-300 text-red-800"
-                }`}
-                disabled={appt.status === "Completed" || appt.status === "Cancelled"}
-              >
-                {appt.status === "Cancelled" ? "Cancelled" : "Cancel"}
-              </button>
-              <button
-                onClick={() => handleView(appt)}
-                className="bg-[#0A4D68] text-white text-sm py-2 px-6 rounded-full hover:bg-[#08374f]"
-              >
-                View
-              </button>
+            <div className="flex items-center gap-3 text-emerald-600">
+              <div className="w-10 h-10 bg-gradient-to-r from-emerald-100 to-green-200 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <FaClock className="text-sm" />
+              </div>
+              <span className="font-semibold">{appt.time}</span>
             </div>
           </div>
-        ))}
+
+          {/* Patient Info */}
+          <div className="mb-6">
+            <h3 className="font-bold text-lg bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-3">
+              {appt.patientInfo?.name || appt.name}
+            </h3>
+            <div className="space-y-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-gradient-to-r from-[#0A4D68]/10 to-[#0A4D68]/20 rounded-lg flex items-center justify-center">
+                  <FaUser className="text-[#0A4D68] text-xs" />
+                </div>
+                <span className="font-medium">Age: {appt.patientInfo?.age || "N/A"}</span>
+                <div className="w-6 h-6 bg-gradient-to-r from-pink-100 to-rose-200 rounded-lg flex items-center justify-center ml-4">
+                  <FaVenusMars className="text-pink-600 text-xs" />
+                </div>
+                <span className="font-medium">Gender: {appt.patientInfo?.gender || "N/A"}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500 font-medium">Phone: {appt.patientInfo?.phone || "N/A"}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Reason */}
+          <div className="mb-6">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+              <p className="text-sm text-blue-800 font-medium">
+                <span className="font-semibold">Reason:</span> {appt.reason || "Not specified"}
+              </p>
+            </div>
+          </div>
+
+          {/* Status */}
+          <div className="mb-6">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-600 font-medium">Status:</span>
+              <span className={`px-4 py-2 rounded-full text-xs font-semibold shadow-sm ${
+                appt.status === "completed" ? "bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200" :
+                appt.status === "cancelled" ? "bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border border-red-200" :
+                "bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800 border border-yellow-200"
+              }`}>
+                {appt.status}
+              </span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => handleCancel(appt)}
+              className={`flex-1 text-sm py-3 rounded-xl font-semibold transition-all duration-300 shadow-sm ${
+                appt.status === "completed" || appt.status === "cancelled"
+                  ? "bg-gradient-to-r from-gray-100 to-gray-200 cursor-not-allowed text-gray-400"
+                  : "bg-gradient-to-r from-red-100 to-rose-100 hover:from-red-200 hover:to-rose-200 text-red-700 hover:shadow-md"
+              }`}
+              disabled={appt.status === "completed" || appt.status === "cancelled"}
+            >
+              {appt.status === "cancelled" ? "Cancelled" : "Cancel"}
+            </button>
+            <button
+              onClick={() => handleView(appt)}
+              className="flex-1 bg-gradient-to-r from-[#0A4D68] to-[#1e6b8a] hover:from-[#083e54] hover:to-[#0A4D68] text-white text-sm py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+            >
+              View Details
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 };

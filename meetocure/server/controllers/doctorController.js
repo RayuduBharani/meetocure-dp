@@ -101,42 +101,35 @@ const getDoctorProfile = async (req, res) =>
 
 // ........... Update doctor profile
 const updateDoctorProfile = async (req, res) => {
-  console.log("updateDoctorProfile");
   try {
     const doctorId = req.user?.id || req.user?.doctorId;
-    console.log(doctorId);
 
-
-    // Map incoming payload from frontend edit form directly
+    // First verify the doctor exists in User collection
+    const userDoc = await DoctorVerification.findOne({ _id: doctorId });
+    
+    if (!userDoc) {
+      console.log("No user found for this doctorId");
+      return res.status(404).json({
+        message: "Doctor not found in user records",
+        doctorId: doctorId
+      });
+    }
+    
+    // Only allow editing of specific fields
     const updatePayload = {
-      // Header/basic
-      profileImage: req.body.profileImage,
+      // Header/basic - editable
       fullName: req.body.fullName,
       primarySpecialization: req.body.primarySpecialization,
-      verified: req.body.verified,
-
-      // Overview
       category: req.body.category,
       experienceYears: req.body.experienceYears,
 
-      // Personal information
+      // Personal information - editable
       gender: req.body.gender,
       dateOfBirth: req.body.dateOfBirth,
-      medicalCouncilRegistrationNumber: req.body.medicalCouncilRegistrationNumber,
-      medicalCouncilName: req.body.medicalCouncilName,
-      yearOfRegistration: req.body.yearOfRegistration,
-      additionalSpecializations: req.body.additionalSpecializations,
-      aadhaarNumber: req.body.aadhaarNumber,
-      panNumber: req.body.panNumber,
-
-      // Lists
-      qualifications: Array.isArray(req.body.qualifications) ? req.body.qualifications : [],
+      
+      // Lists - editable
       hospitalInfo: Array.isArray(req.body.hospitalInfo) ? req.body.hospitalInfo : [],
       bankingInfo: Array.isArray(req.body.bankingInfo) ? req.body.bankingInfo : [],
-
-      // Documents
-      identityDocument: req.body.identityDocument,
-      medicalCouncilCertificate: req.body.medicalCouncilCertificate,
     };
 
     // Remove empty strings/nulls to avoid unique index and validation issues
@@ -172,12 +165,6 @@ const updateDoctorProfile = async (req, res) => {
       if (cleanedBank.length) updatePayload.bankingInfo = cleanedBank;
       else delete updatePayload.bankingInfo;
     }
-    if (Array.isArray(req.body.qualifications)) {
-      const cleanedQual = req.body.qualifications.filter((q) => q && (q.degree || q.universityCollege || q.year));
-      if (cleanedQual.length) updatePayload.qualifications = cleanedQual;
-      else delete updatePayload.qualifications;
-    }
-
     // Guard category against invalid enum values
     const allowedCategories = [
       'Cardiology',
@@ -194,37 +181,35 @@ const updateDoctorProfile = async (req, res) => {
       delete updatePayload.category;
     }
 
-    // Compute profile completeness conservatively
-    const isProfileComplete = Boolean(
-      updatePayload.fullName &&
-      updatePayload.medicalCouncilRegistrationNumber &&
-      updatePayload.profileImage &&
-      updatePayload.identityDocument &&
-      updatePayload.medicalCouncilCertificate
-    );
+    // Don't modify the isProfileComplete status during updates
+    delete updatePayload.isProfileComplete;
 
-    updatePayload.isProfileComplete = isProfileComplete;
+    // Now update the DoctorVerification document    
+    console.log("Updating doctorId:", doctorId);
+    const existingDoctor = await DoctorVerification.findOne({_id: doctorId });
+    // console.log("existingDoctor:", existingDoctor);
+    
+    if (!existingDoctor) {
+      console.log("No doctor verification found for doctorId:", doctorId);
+      // Let's check what documents exist in the collection
+      const allDocs = await DoctorVerification.find({}).select('doctorId _id');
+      
+      return res.status(404).json({ 
+        message: "Profile verification not found. Make sure you've completed the verification process first.",
+        doctorId: doctorId,
+        tip: "Please complete the doctor verification process before updating your profile."
+      });
+    }
 
-    // Update by doctorId reference field, not _id. Create if missing.
-    const hasAllRequiredForInsert = Boolean(
-      updatePayload.fullName &&
-      updatePayload.medicalCouncilRegistrationNumber &&
-      updatePayload.profileImage &&
-      updatePayload.identityDocument &&
-      updatePayload.medicalCouncilCertificate
-    );
-
-    const updated = await DoctorVerification.findOneAndUpdate(
-      { doctorId: doctorId },
-      {
-        $set: updatePayload,
-        ...(hasAllRequiredForInsert ? { $setOnInsert: { doctorId: doctorId } } : {}),
-      },
-      { new: true, upsert: hasAllRequiredForInsert, setDefaultsOnInsert: hasAllRequiredForInsert, runValidators: true, context: 'query' }
+    const updated = await DoctorVerification.updateOne(
+      { _id: doctorId },
+      { $set: updatePayload },
+      { new: true, runValidators: true }
     );
 
     if (!updated) {
-      return res.status(400).json({ message: "Profile not found. Provide required fields to create a new profile: fullName, medicalCouncilRegistrationNumber, profileImage, identityDocument, medicalCouncilCertificate" });
+      console.log("Update failed for doctorId:", doctorId);
+      return res.status(404).json({ message: "Failed to update profile" });
     }
 
     return res.json(updated);

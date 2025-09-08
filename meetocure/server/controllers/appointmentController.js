@@ -135,14 +135,17 @@ const getDoctorAppointments = async (req, res) => {
   try {
     // Resolve doctorId from token/user
     let doctorId = req.user?.doctorId || req.user?._id || req.user?.id;
+    // console.log(doctorId.toString());
     if (!doctorId) return res.status(400).json({ message: "Doctor ID not found" });
 
     // Fetch appointments for this doctor
-    const appointments = await Appointment.find({ doctor: doctorId })
+    const appointments = await Appointment.find({ doctor: doctorId.toString() })
       .populate("patient", "name")
       .sort({ appointment_date: 1, appointment_time: 1 });
+    
+      // console.log(appointments);
 
-    // Map to minimal shape required by frontend
+    // Map to shape required by frontend with full patient info
     const minimal = appointments.map((a) => ({
       _id: a._id,
       time: a.appointment_time,
@@ -150,7 +153,10 @@ const getDoctorAppointments = async (req, res) => {
       name: a.patient?.name || (a.patientInfo && a.patientInfo.name) || "—",
       reason: a.reason || a.patientInfo?.reason || "",
       date: a.appointment_date, // keep date if frontend needs it for calendar
+      patientInfo: a.patientInfo || {}, // Include full patient info
+      patient: a.patient || {} // Include patient data for fallback
     }));
+    // console.log(minimal);
 
     return res.json({ appointments: minimal });
   } catch (err) {
@@ -262,22 +268,21 @@ const cancelAppointment = async (req, res) => {
         match: appointmentDoctorId === currentDoctorId
       });
       
-      // Temporary bypass for debugging - remove this in production
-      // return res.status(403).json({ 
-      //   success: false, 
-      //   message: "Not authorized to cancel this appointment" 
-      // });
+      return res.status(403).json({ 
+        success: false, 
+        message: "Not authorized to cancel this appointment" 
+      });
     }
 
     // Check if appointment can be cancelled (not already completed)
-    if (appointment.status === "Completed") {
+    if (appointment.status === "completed") {
       return res.status(400).json({ 
         success: false, 
         message: "Cannot cancel a completed appointment" 
       });
     }
 
-    if (appointment.status === "Cancelled") {
+    if (appointment.status === "cancelled") {
       return res.status(400).json({ 
         success: false, 
         message: "Appointment is already cancelled" 
@@ -285,7 +290,7 @@ const cancelAppointment = async (req, res) => {
     }
 
     // Update appointment status to cancelled
-    appointment.status = "Cancelled";
+    appointment.status = "cancelled";
     await appointment.save();
 
     // Create notification for patient about cancellation
