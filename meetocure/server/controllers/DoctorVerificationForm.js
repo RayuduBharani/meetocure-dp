@@ -23,9 +23,7 @@ const uploadBufferToCloudinary = async (buffer, folder, filename) => {
         public_id: filename, 
         resource_type: 'image'
       };
-      
-      console.log('Attempting to upload to Cloudinary with options:', uploadOptions);
-      
+           
       const stream = cloudinary.uploader.upload_stream(
         uploadOptions,
         (error, result) => {
@@ -33,7 +31,6 @@ const uploadBufferToCloudinary = async (buffer, folder, filename) => {
             console.error('Cloudinary upload error:', error);
             return reject(error);
           }
-          console.log('Successfully uploaded to Cloudinary:', result.secure_url);
           resolve(result.secure_url);
         }
       );
@@ -99,12 +96,10 @@ const verifyDoctor = async (req, res) => {
     // If files were uploaded, upload them to Cloudinary and set URLs
     if (req.files) {
       try {
-        console.log('Processing file uploads:', Object.keys(req.files));
 
         // profileImage
         if (req.files.profileImage && req.files.profileImage[0]) {
           const file = req.files.profileImage[0];
-          console.log('Uploading profile image:', { size: file.size, mimetype: file.mimetype });
           const url = await cloudinaryUpload(file.buffer, 'doctor_verifications', `profile_${doctorId}`);
           data.profileImage = url;
         }
@@ -120,17 +115,14 @@ const verifyDoctor = async (req, res) => {
         // medicalCouncilCertificate
         if (req.files.medicalCouncilCertificate && req.files.medicalCouncilCertificate[0]) {
           const file = req.files.medicalCouncilCertificate[0];
-          console.log('Uploading medical council certificate:', { size: file.size, mimetype: file.mimetype });
           const url = await cloudinaryUpload(file.buffer, 'doctor_verifications', `council_${doctorId}`);
           data.medicalCouncilCertificate = url;
         }
 
         // qualificationCertificates (multiple)
         if (req.files.qualificationCertificates && req.files.qualificationCertificates.length) {
-          console.log(`Processing ${req.files.qualificationCertificates.length} qualification certificates`);
           const certUrls = [];
           for (const [idx, file] of req.files.qualificationCertificates.entries()) {
-            console.log(`Uploading qualification certificate ${idx + 1}:`, { size: file.size, mimetype: file.mimetype });
             const url = await cloudinaryUpload(file.buffer, 'doctor_verifications', `qual_${doctorId}_${idx}`);
             certUrls.push(url);
           }
@@ -138,7 +130,6 @@ const verifyDoctor = async (req, res) => {
         }
 
       } catch (uploadError) {
-        console.error('Error during file upload:', uploadError);
         return res.status(500).json({ 
           message: 'Failed to upload files',
           error: uploadError.message
@@ -150,7 +141,6 @@ const verifyDoctor = async (req, res) => {
     const fileFields = ['profileImage', 'identityDocument', 'medicalCouncilCertificate'];
     fileFields.forEach(field => {
       if (Array.isArray(data[field])) {
-        console.log(`Cleaning up array field ${field}:`, data[field]);
         data[field] = ''; // Clear the field, it will be set by file upload
       }
     });
@@ -168,33 +158,20 @@ const verifyDoctor = async (req, res) => {
       const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
       const doctorIdShort = doctor._id.toString().slice(-4); // Last 4 characters of doctor ID
       data.medicalCouncilRegistrationNumber = `MCR${doctorIdShort}${timestamp}`;
-      console.log("Generated default medical council registration number:", data.medicalCouncilRegistrationNumber);
     }
-
-    // Ensure medicalCouncilRegistrationNumber is unique across verifications
-    console.log("Checking medicalCouncilRegistrationNumber:", data.medicalCouncilRegistrationNumber);
-    console.log("Current doctorId:", doctorId);
-    console.log("Doctor from DB:", doctor._id.toString());
-    
     if (data.medicalCouncilRegistrationNumber) {
       const existing = await DoctorVerification.findOne({ 
         medicalCouncilRegistrationNumber: data.medicalCouncilRegistrationNumber 
       });
       
-      console.log("Existing verification found:", existing);
       
       if (existing) {
-        console.log("Existing doctorId:", existing.doctorId?.toString());
-        console.log("Current doctorId from query:", doctorId.toString());
-        console.log("Doctor ID from DB:", doctor._id.toString());
-        
         // Use the doctor ID from the database (more reliable)
         const actualDoctorId = doctor._id.toString();
         const existingDoctorId = existing.doctorId?.toString();
         
         // Allow the same doctor to update their verification
         if (existingDoctorId && existingDoctorId !== actualDoctorId) {
-          console.log("Different doctor - checking if we can update");
           
           // Check if the existing verification belongs to a doctor that no longer exists
           const existingDoctor = await Doctor.findById(existingDoctorId);
@@ -242,7 +219,6 @@ const verifyDoctor = async (req, res) => {
     let verification;
     if (existingVerification) {
       // Update existing verification
-      console.log("Updating existing verification:", existingVerification._id);
       verification = await DoctorVerification.findByIdAndUpdate(
         existingVerification._id,
         verificationData,
@@ -250,7 +226,6 @@ const verifyDoctor = async (req, res) => {
       );
     } else {
       // Create new verification
-      console.log("Creating new verification");
       verification = new DoctorVerification(verificationData);
       await verification.save();
     }
@@ -266,20 +241,13 @@ const verifyDoctor = async (req, res) => {
       doctor.bankingInfo = bankingInfo;
     }
     
-    // Set registration status to verified
-    doctor.registrationStatus = "verified";
+    // Keep registration status under review until manual approval
+    doctor.registrationStatus = "under review by hospital";
     await doctor.save();
-
-    const token = jwt.sign(
-      { doctorId: doctor._id, email: doctor.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
 
     return res.json({
       success: true,
-      message: "Verification submitted successfully",
-      token,
+      message: "Verification submitted successfully. Awaiting approval.",
       doctor: {
         _id: doctor._id,
         email: doctor.email,
@@ -342,7 +310,7 @@ const deleteVerification = async (req, res) => {
     const doctor = await Doctor.findById(doctorId);
     if (doctor) {
       doctor.verificationDetails = undefined;
-      doctor.registrationStatus = "pending_verification";
+      doctor.registrationStatus = "under review by hospital";
       await doctor.save();
     }
 

@@ -8,8 +8,27 @@ export const DoctorVerification = () => {
   // eslint-disable-next-line no-unused-vars
   const [hospitalData, setHospitalData] = useState(null);
 
-  // Check for hospital data
+  // Check for hospital data (single check)
   useEffect(() => {
+    // If already logged in, redirect appropriately
+    try {
+      const stored = localStorage.getItem('doctorInfo');
+      const doctor = stored ? JSON.parse(stored) : null;
+      const token = localStorage.getItem('doctorToken');
+      if (token && doctor && doctor.registrationStatus) {
+        if (doctor.registrationStatus === 'verified') {
+          navigate('/doctor-dashboard');
+          return;
+        } else {
+          navigate('/doctor-verify');
+          return;
+        }
+      }
+    // eslint-disable-next-line no-unused-vars
+    } catch (_) {
+      console.log("err")
+    }
+
     const storedHospitalData = localStorage.getItem("hospitalData");
     if (!storedHospitalData) {
       toast.error("Please fill hospital information first");
@@ -58,18 +77,7 @@ export const DoctorVerification = () => {
   const [qualificationCertificateFiles, setQualificationCertificateFiles] =
     useState([]);
 
-  // Check for hospital data on initial load
-  useEffect(() => {
-    const storedHospitalData = localStorage.getItem("hospitalData");
-    if (!storedHospitalData) {
-      toast.error(
-        "Hospital information not found. Please fill in hospital details first."
-      );
-      navigate("/");
-      return;
-    }
-    setHospitalData(JSON.parse(storedHospitalData));
-  }, [navigate]);
+  // Removed duplicate hospital data check to avoid repeated toasts/navigation
 
   const handleChange = (e) => {
     const { name, value } = e.target;

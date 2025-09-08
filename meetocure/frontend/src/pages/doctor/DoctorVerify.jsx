@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaEnvelope, FaPhoneAlt, FaLock, FaArrowLeft } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -21,7 +21,23 @@ const DoctorVerify = () => {
   const [showPopup, setShowPopup] = useState(false);
 
   // eslint-disable-next-line no-unused-vars
-  const [registrationStatus, setRegistrationStatus] = useState("pending_verification");
+  const [registrationStatus, setRegistrationStatus] = useState("under review by hospital");
+
+  // If already logged in, redirect appropriately
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("doctorInfo");
+      const doctor = stored ? JSON.parse(stored) : null;
+      const token = localStorage.getItem("doctorToken");
+      if (token && doctor && doctor.registrationStatus) {
+        if (doctor.registrationStatus === "verified") {
+          navigate("/doctor-dashboard");
+        } else {
+          navigate("/doctor-verify");
+        }
+      }
+    } catch (_) {}
+  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -95,7 +111,30 @@ const DoctorVerify = () => {
         toast.dismiss(loadingToast);
         toast.success("Login successful!");
         navigate("/doctor-dashboard");
-      } else if (res.data.registrationStatus === "pending_verification" || res.data.doctor?.registrationStatus === "pending_verification") {
+      } else if (res.data.isNewlyRegistered || (!res.data.doctor && res.data.registrationStatus === "under review by hospital")) {
+        const doctorId = res.data.doctorId;
+        if (doctorId) {
+          localStorage.setItem("doctorId", doctorId);
+        }
+        toast.dismiss(loadingToast);
+        toast.success("Registration submitted. Please fill hospital details.");
+        navigate("/hospital-form");
+      } else if (res.data.registrationStatus === "rejected" || res.data.doctor?.registrationStatus === "rejected") {
+        const doctorId = res.data.doctorId || res.data.doctor?.doctorId || res.data.doctor?._id;
+        if (res.data.doctor) {
+          localStorage.setItem("doctorInfo", JSON.stringify(res.data.doctor));
+        }
+        if (doctorId) {
+          localStorage.setItem("doctorId", doctorId);
+        }
+        toast.dismiss(loadingToast);
+        toast.error("Your verification was rejected. Please update and re-submit.");
+        navigate('/doctor-verify', { state: { from: 'doctor-auth', serverInfo: {
+          doctorId,
+          message: res.data.message || '',
+          registrationStatus: 'rejected',
+        } } });
+      } else if (res.data.registrationStatus === "under review by hospital" || res.data.doctor?.registrationStatus === "under review by hospital") {
         const doctorId = res.data.doctorId || res.data.doctor?.doctorId;
         // Store doctor info for later use in verification process
         if (res.data.doctor) {
@@ -106,7 +145,8 @@ const DoctorVerify = () => {
           localStorage.setItem("doctorId", doctorId);
         }
         toast.dismiss(loadingToast);
-        navigate(`/hospital-form`);
+        toast("Your account is pending verification.");
+        navigate(`/doctor-verify`);
       }
     } catch (err) {
       toast.dismiss(loadingToast);

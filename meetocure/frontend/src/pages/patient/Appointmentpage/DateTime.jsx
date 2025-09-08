@@ -106,7 +106,7 @@ const DateTime = () => {
     setLoadingSlots(true);
     setSlotsError("");
     try {
-      const base = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+      const base = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
       console.log("Fetching availability from:", `${base}/api/availability/${encodeURIComponent(doctorId)}`);
       const res = await axios.get(`${base}/api/availability/${encodeURIComponent(doctorId)}`);
       const data = res.data;

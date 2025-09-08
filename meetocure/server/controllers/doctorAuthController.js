@@ -44,7 +44,7 @@ const sendOtp = async (req, res) => {
     return res.json({
       success: true,
       message: "OTP sent successfully",
-      registrationStatus: doctor ? doctor.registrationStatus : "pending_verification",
+      registrationStatus: doctor ? doctor.registrationStatus : "under review by hospital",
     });
   } catch (err) {
     console.error("Send OTP Error:", err);
@@ -108,7 +108,7 @@ const doctorAuth = async (req, res) => {
         email,
         passwordHash: hash,
         mobileNumber,
-        registrationStatus: "pending_verification",
+        registrationStatus: "under review by hospital",
       });
       // Send welcome notification to doctor
       try {
@@ -129,11 +129,13 @@ const doctorAuth = async (req, res) => {
         message: "Registration submitted, pending verification",
         doctorId: doctor._id,
         registrationStatus: doctor.registrationStatus,
+        isNewlyRegistered: true,
       });
     } else {
       const match = await bcrypt.compare(password, doctor.passwordHash);
       if (!match) return res.status(400).json({ message: "Invalid credentials" });
 
+      // Use Doctor collection's registrationStatus
       if (doctor.registrationStatus !== "verified") {
         return res.json({
           message: "Doctor not verified",

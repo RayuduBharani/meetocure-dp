@@ -23,15 +23,11 @@ const doctorSchema = new mongoose.Schema(
     registrationStatus:{
       type: String,
       enum: [
-        "pending_verification",
-        "under review by hospital",
-        "under admin approval",         
+        "under review by hospital",     
         "verified",         
-        "rejected",
-        "active",
-        "inactive",
+        "rejected"
       ],
-      default: "pending_verification",
+      default: "under review by hospital",
     },
     verificationDetails: {
       type: mongoose.Schema.Types.ObjectId,

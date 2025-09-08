@@ -5,6 +5,7 @@ import { API_BASE_URL } from '../../lib/config';
 const BankingInformation = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     bankName: '',
     accountNumber: '',
@@ -62,6 +63,7 @@ const BankingInformation = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
 
     try {
       // Get all data from localStorage
@@ -191,115 +193,126 @@ const BankingInformation = () => {
         // Show success message
         alert('Verification submitted successfully!');
         
-        // Navigate to dashboard
-        navigate('/doctor-dashboard');
+        // Redirect to verification pending screen
+        navigate('/doctor-verify');
       } else {
         throw new Error(data.message || 'Verification failed');
       }
     } catch (error) {
       console.error('Error submitting form:', error);
       alert(error.message || 'Failed to submit verification data');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="bg-slate-100 min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans">
-      <div className="w-full max-w-2xl bg-white p-10 sm:p-12 rounded-2xl shadow-xl">
-        <header className="mb-10 text-center">
-          <h1 className="text-4xl sm:text-5xl font-bold text-primary">
-            Banking Information
-          </h1>
-          <div className="mt-4 text-gray-600">Step 3 of 3</div>
-        </header>
+    <div className="min-h-screen bg-white font-[Poppins] px-6 pt-6 pb-28">
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-3xl font-extrabold text-[#004B5C] text-center mb-6">
+          Banking Information
+        </h1>
+        <div className="text-center text-gray-600 mb-8">Step 3 of 3</div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <FormField
-            id="bankName"
-            name="bankName"
-            label="Bank Name"
-            type="text"
-            placeholder="Enter bank name"
-            value={formData.bankName}
-            onChange={handleChange}
-          />
-          <FormField
-            id="accountNumber"
-            name="accountNumber"
-            label="Account Number"
-            type="text"
-            placeholder="Enter account number"
-            value={formData.accountNumber}
-            onChange={handleChange}
-          />
-          <FormField
-            id="ifscCode"
-            name="ifscCode"
-            label="IFSC Code"
-            type="text"
-            placeholder="Enter IFSC code"
-            value={formData.ifscCode}
-            onChange={handleChange}
-          />
-          <FormField
-            id="accountHolderName"
-            name="accountHolderName"
-            label="Account Holder Name"
-            type="text"
-            placeholder="Enter account holder name"
-            value={formData.accountHolderName}
-            onChange={handleChange}
-          />
-          <FormField
-            id="bankBranch"
-            name="bankBranch"
-            label="Bank Branch"
-            type="text"
-            placeholder="Enter bank branch"
-            value={formData.bankBranch}
-            onChange={handleChange}
-          />
-          <div className="pt-6 flex justify-center">
-            <Button type="submit">Submit</Button>
+          <div>
+            <label className="block text-sm font-semibold mb-1">
+              Bank Name
+            </label>
+            <input
+              type="text"
+              name="bankName"
+              placeholder="Enter bank name"
+              value={formData.bankName}
+              onChange={handleChange}
+              required
+              className="w-full border border-gray-400 px-4 py-2 rounded-xl"
+            />
           </div>
+
+          <div>
+            <label className="block text-sm font-semibold mb-1">
+              Account Number
+            </label>
+            <input
+              type="text"
+              name="accountNumber"
+              placeholder="Enter account number"
+              value={formData.accountNumber}
+              onChange={handleChange}
+              required
+              className="w-full border border-gray-400 px-4 py-2 rounded-xl"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold mb-1">
+              IFSC Code
+            </label>
+            <input
+              type="text"
+              name="ifscCode"
+              placeholder="Enter IFSC code"
+              value={formData.ifscCode}
+              onChange={handleChange}
+              required
+              className="w-full border border-gray-400 px-4 py-2 rounded-xl"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold mb-1">
+              Account Holder Name
+            </label>
+            <input
+              type="text"
+              name="accountHolderName"
+              placeholder="Enter account holder name"
+              value={formData.accountHolderName}
+              onChange={handleChange}
+              required
+              className="w-full border border-gray-400 px-4 py-2 rounded-xl"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold mb-1">
+              Bank Branch
+            </label>
+            <input
+              type="text"
+              name="bankBranch"
+              placeholder="Enter bank branch"
+              value={formData.bankBranch}
+              onChange={handleChange}
+              required
+              className="w-full border border-gray-400 px-4 py-2 rounded-xl"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full py-3 rounded-full font-semibold bg-[#004B5C] text-white hover:bg-[#003246] transition mt-6 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+          >
+            {isLoading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Submitting...
+              </>
+            ) : (
+              'Submit'
+            )}
+          </button>
         </form>
       </div>
     </div>
   );
 };
 
-// Reusable Button Component
-const Button = ({ children, onClick, type = 'button', disabled = false }) => {
-  return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className="bg-primary text-white font-bold text-lg py-3 px-32 rounded-full hover:bg-primary-hover focus:outline-none focus:ring-4 focus:ring-primary focus:ring-opacity-50 transition-all duration-300 ease-in-out disabled:bg-gray-400 disabled:cursor-not-allowed"
-    >
-      {children}
-    </button>
-  );
-};
 
-// Reusable FormField Component
-const FormField = ({ id, name, label, type, placeholder, value, onChange }) => {
-  return (
-    <div>
-      <label htmlFor={id} className="block text-base font-bold text-gray-700 mb-2">
-        {label}
-      </label>
-      <input
-        id={id}
-        name={name}
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className="block w-full px-4 py-3 bg-white border border-gray-400 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
-        required
-      />
-    </div>
-  );
-};
 
 export default BankingInformation;

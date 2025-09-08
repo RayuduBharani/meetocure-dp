@@ -26,7 +26,7 @@ const DoctorAvailability = () => {
           return;
         }
 
-        const base = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+        const base = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
         console.log("Fetching availability from:", `${base}/api/availability/${doctorId}`);
         const res = await axios.get(
           `${base}/api/availability/${doctorId}`,
@@ -47,7 +47,12 @@ const DoctorAvailability = () => {
           status: err.response?.status,
           url: err.config?.url
         });
-        toast.error(err.response?.data?.message || err.message || "Failed to fetch availability");
+        const status = err.response?.status;
+        const message = err.response?.data?.message || "";
+        const isNotFoundOrEmpty = status === 404 || /no\s+availability|not\s+found/i.test(message);
+        if (!isNotFoundOrEmpty) {
+          toast.error(err.response?.data?.message || err.message || "Failed to fetch availability");
+        }
         setAvailability([]);
       } finally {
         setLoading(false);
@@ -56,10 +61,10 @@ const DoctorAvailability = () => {
     fetchAvailability();
   }, []);
 
-  // Sort by date ascending (works with YYYY-MM-DD)
-  const sortedAvailability = [...availability].sort((a, b) =>
-    a.date.localeCompare(b.date)
-  );
+  // Sort by date ascending (works with YYYY-MM-DD) and guard against bad data
+  const sortedAvailability = (Array.isArray(availability) ? availability : [])
+    .filter((day) => day && typeof day.date === "string")
+    .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
 
   // Delete all slots for a given date (with confirm)
   const handleDeleteDate = async (date) => {
@@ -119,7 +124,7 @@ const DoctorAvailability = () => {
         {loading ? (
           <div className="text-center text-gray-500">Loading...</div>
         ) : sortedAvailability.length === 0 ? (
-          <div className="text-center text-gray-400">No availability set</div>
+          <div className="text-center text-gray-400">No data is available</div>
         ) : (
           sortedAvailability.map((day) => (
             <AvailabilityCard
@@ -132,7 +137,7 @@ const DoctorAvailability = () => {
                 month: "long",
                 day: "numeric",
               })}
-              slots={day.slots}
+              slots={Array.isArray(day.slots) ? day.slots : []}
               onChange={() => navigate(`/doctor/availability/change/${day.date}`)}
               onDelete={() => handleDeleteDate(day.date)}
             />
@@ -165,7 +170,7 @@ const AvailabilityCard = ({ dayLabel, date, slots, onChange, onDelete }) => (
 
     {/* Slot Chips */}
     <div className="flex flex-wrap gap-3 text-sm mb-6">
-      {slots.length === 0 ? (
+      {!slots || slots.length === 0 ? (
         <span className="text-gray-400">No slots set</span>
       ) : (
         slots.map((slot, idx) => (
