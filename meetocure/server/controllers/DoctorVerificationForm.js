@@ -2,33 +2,52 @@
 const Doctor = require("../models/DoctorShema");
 const DoctorVerification = require("../models/DoctorVerificationShema");
 const jwt = require("jsonwebtoken");
-const cloudinary = require('../utils/cloudinary');
+const { cloudinary, uploadBufferToCloudinary: cloudinaryUpload } = require('../utils/cloudinary');
 
 // helper to upload a buffer to Cloudinary
-const uploadBufferToCloudinary = (buffer, folder, filename) => {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { folder, public_id: filename, resource_type: 'image' },
-      (error, result) => {
-        if (error) return reject(error);
-        resolve(result.secure_url);
-      }
-    );
-    stream.end(buffer);
-  });
+const uploadBufferToCloudinary = async (buffer, folder, filename) => {
+  try {
+    // Check if cloudinary is properly configured
+    if (!cloudinary.config().cloud_name || !cloudinary.config().api_key || !cloudinary.config().api_secret) {
+      console.error('Cloudinary configuration missing:', {
+        cloud_name: !!cloudinary.config().cloud_name,
+        api_key: !!cloudinary.config().api_key,
+        api_secret: !!cloudinary.config().api_secret
+      });
+      throw new Error('Cloudinary configuration is incomplete');
+    }
+
+    return new Promise((resolve, reject) => {
+      const uploadOptions = { 
+        folder, 
+        public_id: filename, 
+        resource_type: 'image'
+      };
+      
+      console.log('Attempting to upload to Cloudinary with options:', uploadOptions);
+      
+      const stream = cloudinary.uploader.upload_stream(
+        uploadOptions,
+        (error, result) => {
+          if (error) {
+            console.error('Cloudinary upload error:', error);
+            return reject(error);
+          }
+          console.log('Successfully uploaded to Cloudinary:', result.secure_url);
+          resolve(result.secure_url);
+        }
+      );
+      
+      stream.end(buffer);
+    });
+  } catch (error) {
+    console.error('Error in uploadBufferToCloudinary:', error);
+    throw error;
+  }
 };
 
 const verifyDoctor = async (req, res) => {
   try {
-    // console.log("Doctor Verification Request: files:", Object.keys(req.files || {}));
-    // console.log("Request body keys:", Object.keys(req.body || {}));
-    // console.log("Query params:", req.query);
-    console.log("Sample body data:", {
-      profileImage: req.body.profileImage,
-      identityDocument: req.body.identityDocument,
-      medicalCouncilRegistrationNumber: req.body.medicalCouncilRegistrationNumber
-    });
-
     const { doctorId } = req.query; // from frontend query param
     if (!doctorId) {
       return res.status(400).json({ message: "Doctor ID is required" });
@@ -41,6 +60,14 @@ const verifyDoctor = async (req, res) => {
 
     // Build data from body
     const data = { ...req.body };
+    
+    // Clean up empty strings for unique fields
+    if (data.panNumber === '') {
+      delete data.panNumber;
+    }
+    if (data.aadhaarNumber === '') {
+      delete data.aadhaarNumber;
+    }
     
     // Extract hospital and banking information
     const hospitalInfo = {};
@@ -61,11 +88,6 @@ const verifyDoctor = async (req, res) => {
         bankingInfo[fieldName] = req.body[key];
       }
     });
-
-    console.log("Extracted hospitalInfo:", hospitalInfo);
-    console.log("Extracted bankingInfo:", bankingInfo);
-
-    // Parse JSON fields that might be sent as strings (e.g., arrays or objects)
     try {
       if (typeof data.qualifications === 'string') data.qualifications = JSON.parse(data.qualifications);
       if (typeof data.qualificationCertificates === 'string') data.qualificationCertificates = JSON.parse(data.qualificationCertificates);
@@ -76,37 +98,52 @@ const verifyDoctor = async (req, res) => {
 
     // If files were uploaded, upload them to Cloudinary and set URLs
     if (req.files) {
-      // profileImage
-      if (req.files.profileImage && req.files.profileImage[0]) {
-        const file = req.files.profileImage[0];
-        const url = await uploadBufferToCloudinary(file.buffer, 'doctor_verifications', `profile_${doctorId}`);
-        data.profileImage = url;
-      }
+      try {
+        console.log('Processing file uploads:', Object.keys(req.files));
 
-      // identityDocument (Aadhaar image)
-      if (req.files.identityDocument && req.files.identityDocument[0]) {
-        const file = req.files.identityDocument[0];
-        const url = await uploadBufferToCloudinary(file.buffer, 'doctor_verifications', `identity_${doctorId}`);
-        data.identityDocument = url;
-      }
-
-      // medicalCouncilCertificate
-      if (req.files.medicalCouncilCertificate && req.files.medicalCouncilCertificate[0]) {
-        const file = req.files.medicalCouncilCertificate[0];
-        const url = await uploadBufferToCloudinary(file.buffer, 'doctor_verifications', `council_${doctorId}`);
-        data.medicalCouncilCertificate = url;
-      }
-
-      // qualificationCertificates (multiple)
-      if (req.files.qualificationCertificates && req.files.qualificationCertificates.length) {
-        const certUrls = [];
-        for (const [idx, file] of req.files.qualificationCertificates.entries()) {
-          const url = await uploadBufferToCloudinary(file.buffer, 'doctor_verifications', `qual_${doctorId}_${idx}`);
-          certUrls.push(url);
+        // profileImage
+        if (req.files.profileImage && req.files.profileImage[0]) {
+          const file = req.files.profileImage[0];
+          console.log('Uploading profile image:', { size: file.size, mimetype: file.mimetype });
+          const url = await cloudinaryUpload(file.buffer, 'doctor_verifications', `profile_${doctorId}`);
+          data.profileImage = url;
         }
-        data.qualificationCertificates = certUrls;
-      }
 
+        // identityDocument (Aadhaar image)
+        if (req.files.identityDocument && req.files.identityDocument[0]) {
+          const file = req.files.identityDocument[0];
+          console.log('Uploading identity document:', { size: file.size, mimetype: file.mimetype });
+          const url = await cloudinaryUpload(file.buffer, 'doctor_verifications', `identity_${doctorId}`);
+          data.identityDocument = url;
+        }
+
+        // medicalCouncilCertificate
+        if (req.files.medicalCouncilCertificate && req.files.medicalCouncilCertificate[0]) {
+          const file = req.files.medicalCouncilCertificate[0];
+          console.log('Uploading medical council certificate:', { size: file.size, mimetype: file.mimetype });
+          const url = await cloudinaryUpload(file.buffer, 'doctor_verifications', `council_${doctorId}`);
+          data.medicalCouncilCertificate = url;
+        }
+
+        // qualificationCertificates (multiple)
+        if (req.files.qualificationCertificates && req.files.qualificationCertificates.length) {
+          console.log(`Processing ${req.files.qualificationCertificates.length} qualification certificates`);
+          const certUrls = [];
+          for (const [idx, file] of req.files.qualificationCertificates.entries()) {
+            console.log(`Uploading qualification certificate ${idx + 1}:`, { size: file.size, mimetype: file.mimetype });
+            const url = await cloudinaryUpload(file.buffer, 'doctor_verifications', `qual_${doctorId}_${idx}`);
+            certUrls.push(url);
+          }
+          data.qualificationCertificates = certUrls;
+        }
+
+      } catch (uploadError) {
+        console.error('Error during file upload:', uploadError);
+        return res.status(500).json({ 
+          message: 'Failed to upload files',
+          error: uploadError.message
+        });
+      }
     }
 
     // Clean up any array fields that might have been sent incorrectly

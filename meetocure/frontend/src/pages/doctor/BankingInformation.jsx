@@ -29,6 +29,7 @@ const BankingInformation = () => {
       // Check if doctor is already verified
       checkVerificationStatus();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   const checkVerificationStatus = async () => {

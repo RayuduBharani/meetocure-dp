@@ -122,6 +122,8 @@ const updateDoctorProfile = async (req, res) => {
       primarySpecialization: req.body.primarySpecialization,
       category: req.body.category,
       experienceYears: req.body.experienceYears,
+      consultationFee: req.body.consultationFee,
+      about: req.body.about,
 
       // Personal information - editable
       gender: req.body.gender,
@@ -148,6 +150,14 @@ const updateDoctorProfile = async (req, res) => {
     }
     if (updatePayload.yearOfRegistration !== undefined) {
       updatePayload.yearOfRegistration = String(updatePayload.yearOfRegistration);
+    }
+    if (updatePayload.consultationFee !== undefined) {
+      const fee = Number(updatePayload.consultationFee);
+      if (isNaN(fee) || fee < 0) {
+        delete updatePayload.consultationFee;
+      } else {
+        updatePayload.consultationFee = fee;
+      }
     }
 
     // Sanitize list items: keep only fully filled entries

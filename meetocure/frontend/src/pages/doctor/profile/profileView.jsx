@@ -206,6 +206,15 @@ const ProfileView = () => {
               <InfoRow label="Category" value={doctorData.category} />
               <InfoRow label="Experience" value={`${doctorData.experienceYears} years`} />
               <InfoRow label="Specializations" value={doctorData.additionalSpecializations} />
+              <InfoRow label="Consultation Fee" value={`₹${doctorData.consultationFee || 'Not set'}`} />
+              {doctorData.about && (
+                <div className="pt-2">
+                  <label className="text-gray-600 text-sm font-medium mb-2 block">About</label>
+                  <p className="text-gray-800 text-sm whitespace-pre-wrap rounded-lg bg-gray-50 p-3">
+                    {doctorData.about}
+                  </p>
+                </div>
+              )}
             </div>
           </InfoCard>
 

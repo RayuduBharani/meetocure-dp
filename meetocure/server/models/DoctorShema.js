@@ -23,9 +23,10 @@ const doctorSchema = new mongoose.Schema(
     registrationStatus:{
       type: String,
       enum: [
-        "pending_verification", // after OTP, waiting form submission
-        "under_review",         // submitted verification form
-        "verified",             // approved by admin
+        "pending_verification",
+        "under review by hospital",
+        "under admin approval",         
+        "verified",         
         "rejected",
         "active",
         "inactive",

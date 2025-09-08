@@ -17,6 +17,8 @@ const EditProfile = () => {
     gender: "",
     dateOfBirth: "",
     profileImage: "",
+    consultationFee: "",
+    about: "",
     hospitalInfo: [], // { hospitalName, hospitalAddress, contactNumber }
     bankingInfo: [], // { bankName, bankBranch, accountHolderName, accountNumber, ifscCode }
   });
@@ -42,6 +44,8 @@ const EditProfile = () => {
           gender: data.gender || "",
           dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString().slice(0, 10) : "",
           profileImage: data.profileImage || "",
+          consultationFee: data.consultationFee?.toString?.() || "",
+          about: data.about || "",
           hospitalInfo: Array.isArray(data.hospitalInfo) ? data.hospitalInfo : [],
           bankingInfo: Array.isArray(data.bankingInfo) ? data.bankingInfo : [],
         }));
@@ -113,6 +117,8 @@ const EditProfile = () => {
         experienceYears: form.experienceYears,
         gender: form.gender,
         dateOfBirth: form.dateOfBirth,
+        consultationFee: Number(form.consultationFee) || 0,
+        about: form.about,
         hospitalInfo: form.hospitalInfo,
         bankingInfo: form.bankingInfo,
       };
@@ -202,6 +208,7 @@ const EditProfile = () => {
                 onChange={(e) => updateField("fullName", e.target.value)} 
                 className="w-full border rounded-lg px-3 py-2" 
                 placeholder="Enter full name" 
+                required
               />
             </div>
             <div>
@@ -243,6 +250,29 @@ const EditProfile = () => {
                 placeholder="e.g. 5" 
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Consultation Fee (₹)</label>
+              <input 
+                type="number" 
+                value={form.consultationFee} 
+                onChange={(e) => updateField("consultationFee", e.target.value)} 
+                className="w-full border rounded-lg px-3 py-2" 
+                placeholder="Enter consultation fee" 
+                min="0"
+                required
+              />
+            </div>
+          </div>
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">About</label>
+            <textarea 
+              value={form.about} 
+              onChange={(e) => updateField("about", e.target.value)} 
+              className="w-full border rounded-lg px-3 py-2" 
+              placeholder="Write about your practice and experience" 
+              rows="4"
+              required
+            />
           </div>
         </section>
 

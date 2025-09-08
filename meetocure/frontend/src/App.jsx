@@ -61,6 +61,7 @@ import ProfileView from "./pages/doctor/profile/profileView";
 
 import { GoogleMapsProvider } from './contexts/GoogleMapsContext';
 import AppointmentProvider from "./contexts/AppointmentContext.jsx";
+import DcoterVerificationPending from "./pages/doctor/DcoterVerificationPending.jsx";
 
 function App() {
   return (
@@ -72,6 +73,8 @@ function App() {
         <Route path="/choose-role" element={<ChooseRoleScreen />} />
         <Route path="/dual-patient" element={<PatientLogin />} />
         <Route path="/dual-doctor" element={<DoctorVerify />} />
+        {/* docter verification pending page */}
+        <Route path="/doctor-verify" element={<DcoterVerificationPending />} />
 
         {/* Doctor Routes */}
         {/* <Route element={<PrivateRoute allowedRoles={['doctor']} />}> */}

@@ -125,9 +125,17 @@ const DoctorProfilePage = () => {
         <h2 className="text-xl font-semibold text-[#0A4D68] mb-1">
           {doctorInfo?.fullName || "Loading..."}
         </h2>
-        <p className="text-[#6B7280] mb-6">
+        <p className="text-[#6B7280] mb-2">
           {doctorInfo?.primarySpecialization || "Loading"}
         </p>
+        <p className="text-[#0A4D68] font-medium mb-2">
+          Consultation Fee: ₹{doctorInfo?.consultationFee || "Loading"}
+        </p>
+        {doctorInfo?.about && (
+          <p className="text-[#6B7280] mb-6 max-w-lg text-sm">
+            {doctorInfo.about}
+          </p>
+        )}
       </motion.div>
 
       {/* Profile Options */}

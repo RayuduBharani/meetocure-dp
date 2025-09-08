@@ -61,8 +61,14 @@ const DoctorVerificationSchema = new mongoose.Schema({
     'Other'
   ],
   default: 'General'
-}
-,
+},
+  consultationFee: { type: Number, required: true },
+  about: String,
+  earnings: { type: Number, default: 0 },
+  patientsConsulted: { type: [
+    { type: mongoose.Schema.Types.ObjectId, ref: "Patient" }
+  ], default: [] },
+
 
   // Education & Experience
   qualifications: [
@@ -83,8 +89,28 @@ const DoctorVerificationSchema = new mongoose.Schema({
 
 
   // Government IDs
-  aadhaarNumber: { type: String, unique: true, sparse: true },
-  panNumber: { type: String, unique: true, sparse: true },
+  aadhaarNumber: { 
+    type: String, 
+    unique: true, 
+    sparse: true,
+    validate: {
+      validator: function(v) {
+        return v === undefined || v === null || v === '' || /^\d{12}$/.test(v);
+      },
+      message: props => `${props.value} is not a valid Aadhaar number! Must be 12 digits.`
+    }
+  },
+  panNumber: { 
+    type: String, 
+    unique: true, 
+    sparse: true,
+    validate: {
+      validator: function(v) {
+        return v === undefined || v === null || v === '' || /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(v);
+      },
+      message: props => `${props.value} is not a valid PAN number! Format should be ABCDE1234F`
+    }
+  },
 
   // Files (store paths/filenames after multer/cloud upload)
   profileImage: { type: String, required: true },

@@ -34,6 +34,9 @@ export const DoctorVerification = () => {
     location: {
       city: "",
       state: "",
+      pincode: "",
+      address: "",
+      landmark: ""
     },
     aadhaarNumber: "",
     panNumber: "",
@@ -42,6 +45,9 @@ export const DoctorVerification = () => {
     medicalCouncilCertificate: "",
     qualificationCertificates: [],
     profileImage: "",
+    consultationFee: "",
+    about: "",
+    languages: []
   });
 
   // Local file state (images only)
@@ -103,7 +109,6 @@ export const DoctorVerification = () => {
     }));
 
   // handle location changes
-  // eslint-disable-next-line no-unused-vars
   const handleLocationChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -127,10 +132,48 @@ export const DoctorVerification = () => {
       return toast.error(
         "At least one qualification certificate image is required"
       );
+    
+    // Check if consultation fee is provided
+    if (!formData.consultationFee) {
+      return toast.error("Consultation fee is required");
+    }
+
+    // Check if about section is filled
+    if (!formData.about || formData.about.trim() === '') {
+      return toast.error("Please provide information in the About section");
+    }
+    
+    // Validate PAN number format if provided
+    if (formData.panNumber && formData.panNumber.trim() !== '') {
+      const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+      if (!panRegex.test(formData.panNumber.trim())) {
+        return toast.error("Invalid PAN number format. Should be like ABCDE1234F");
+      }
+    }
+
+    // Validate Aadhaar number format if provided
+    if (formData.aadhaarNumber && formData.aadhaarNumber.trim() !== '') {
+      const aadhaarRegex = /^\d{12}$/;
+      if (!aadhaarRegex.test(formData.aadhaarNumber.trim())) {
+        return toast.error("Invalid Aadhaar number format. Should be 12 digits");
+      }
+    }
+
+    // Remove empty PAN and Aadhaar numbers
+    const dataToSubmit = { ...formData };
+    if (!dataToSubmit.panNumber || dataToSubmit.panNumber.trim() === '') {
+      delete dataToSubmit.panNumber;
+    }
+    if (!dataToSubmit.aadhaarNumber || dataToSubmit.aadhaarNumber.trim() === '') {
+      delete dataToSubmit.aadhaarNumber;
+    }
+
+    // Convert consultation fee to number
+    dataToSubmit.consultationFee = Number(formData.consultationFee);
 
     // Save doctor data and files to localStorage
     const doctorData = {
-      ...formData,
+      ...dataToSubmit,
       files: {
         profileImage: profileImageFile,
         identityDocument: identityDocumentFile,
@@ -477,6 +520,66 @@ export const DoctorVerification = () => {
               onChange={(e) => handleFileChange(e, setProfileImageFile)}
               required
               className="w-full border border-gray-300 px-3 py-2 rounded"
+            />
+          </div>
+
+          {/* Additional Location Fields */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Location Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input
+                type="text"
+                placeholder="Address"
+                value={formData.location.address}
+                onChange={(e) => handleLocationChange('address', e.target.value)}
+                className="w-full border border-gray-400 px-4 py-2 rounded-xl"
+              />
+              <input
+                type="text"
+                placeholder="Landmark"
+                value={formData.location.landmark}
+                onChange={(e) => handleLocationChange('landmark', e.target.value)}
+                className="w-full border border-gray-400 px-4 py-2 rounded-xl"
+              />
+              <input
+                type="text"
+                placeholder="Pincode"
+                value={formData.location.pincode}
+                onChange={(e) => handleLocationChange('pincode', e.target.value)}
+                className="w-full border border-gray-400 px-4 py-2 rounded-xl"
+              />
+            </div>
+          </div>
+
+          {/* Consultation Fee */}
+          <div>
+            <label className="block text-sm font-semibold mb-1">
+              Consultation Fee (₹)
+            </label>
+            <input
+              type="number"
+              name="consultationFee"
+              placeholder="Enter consultation fee"
+              value={formData.consultationFee}
+              onChange={handleChange}
+              required
+              min="0"
+              className="w-full border border-gray-400 px-4 py-2 rounded-xl"
+            />
+          </div>
+
+          {/* About */}
+          <div>
+            <label className="block text-sm font-semibold mb-1">
+              About
+            </label>
+            <textarea
+              name="about"
+              placeholder="Write about your practice and experience"
+              value={formData.about}
+              onChange={handleChange}
+              rows="4"
+              className="w-full border border-gray-400 px-4 py-2 rounded-xl resize-none"
             />
           </div>
 
