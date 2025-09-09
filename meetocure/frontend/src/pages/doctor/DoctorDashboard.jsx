@@ -19,6 +19,7 @@ const DoctorDashboard = () => {
   const [stats, setStats] = useState({
     todayAppointments: 0,
     pendingAppointments: 0,
+    acceptedAppointments: 0,
     earnings: 0,
     uniquePatients: 0
   });
@@ -39,6 +40,7 @@ const DoctorDashboard = () => {
       setStats({
         todayAppointments: 0,
         pendingAppointments: 0,
+        acceptedAppointments: 0,
         earnings: 0,
         uniquePatients: 0
       });
@@ -63,7 +65,11 @@ const DoctorDashboard = () => {
       const doctor = JSON.parse(doctorInfo);
       if (doctor.registrationStatus !== 'verified') {
         console.log('Doctor not verified, redirecting to verification');
-        navigate('/hospital-form');
+        if (doctor.registrationStatus === 'under review by hospital') {
+          navigate('/doctor-verify');
+        } else {
+          navigate('/hospital-form');
+        }
         return;
       }
     } catch (error) {
@@ -131,12 +137,12 @@ const DoctorDashboard = () => {
         {/* Stats Cards Row 1 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <StatCard 
-            title="Appointments" 
+            title="Today's Appointments" 
             value={loading ? "..." : stats.todayAppointments} 
             loading={loading}
           />
           <StatCard 
-            title="Pending Appt" 
+            title="Pending Appointments" 
             value={loading ? "..." : stats.pendingAppointments} 
             loading={loading}
           />
@@ -145,14 +151,28 @@ const DoctorDashboard = () => {
         {/* Stats Cards Row 2 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
           <StatCard 
-            title="Earnings" 
+            title="Accepted Appointments" 
+            value={loading ? "..." : stats.acceptedAppointments} 
+            loading={loading}
+          />
+          <StatCard 
+            title="Total Patients" 
+            value={loading ? "..." : stats.uniquePatients} 
+            loading={loading}
+          />
+        </div>
+
+        {/* Stats Cards Row 3 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
+          <StatCard 
+            title="Monthly Earnings" 
             value={loading ? "..." : `₹${stats.earnings}`} 
             prefix="Earned : " 
             loading={loading}
           />
           <StatCard 
-            title="Patients" 
-            value={loading ? "..." : stats.uniquePatients} 
+            title="Completed This Month" 
+            value={loading ? "..." : stats.completedAppointments || 0} 
             loading={loading}
           />
         </div>

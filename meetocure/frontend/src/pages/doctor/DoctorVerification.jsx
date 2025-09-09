@@ -24,9 +24,8 @@ export const DoctorVerification = () => {
           return;
         }
       }
-    // eslint-disable-next-line no-unused-vars
-    } catch (_) {
-      console.log("err")
+    } catch (err) {
+      console.log(err)
     }
 
     const storedHospitalData = localStorage.getItem("hospitalData");

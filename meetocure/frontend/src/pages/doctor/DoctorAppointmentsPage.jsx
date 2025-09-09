@@ -71,7 +71,7 @@ const DoctorAppointmentsPage = () => {
     
     switch (selectedTab) {
       case "Upcoming":
-        return (appt.status === "pending" || appt.status === "confirmed") && appointmentDate >= today;
+        return (appt.status === "pending" || appt.status === "accepted") && appointmentDate >= today;
       case "Completed":
         return appt.status === "completed";
       case "Cancelled":
@@ -80,6 +80,14 @@ const DoctorAppointmentsPage = () => {
         return true;
     }
   });
+
+  const handleStatusUpdate = (appointmentId, newStatus) => {
+    setAppointments(prevAppointments =>
+      prevAppointments.map(appt =>
+        appt._id === appointmentId ? { ...appt, status: newStatus } : appt
+      )
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 font-poppins">
@@ -142,7 +150,7 @@ const DoctorAppointmentsPage = () => {
             </div>
           ) : (
             filteredAppointments.map((appt) => (
-              <AppointmentCard key={appt._id} appt={appt} />
+              <AppointmentCard key={appt._id} appt={appt} onStatusUpdate={handleStatusUpdate} />
             ))
           )}
         </section>

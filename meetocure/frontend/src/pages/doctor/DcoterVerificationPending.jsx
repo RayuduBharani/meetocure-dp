@@ -20,7 +20,7 @@ export default function DoctorVerificationPending() {
     const doctorId = localStorage.getItem('doctorId') || parsedInfo?.doctorId || parsedInfo?._id;
     if (!doctorId) {
       console.warn('Doctor ID not found in localStorage. Redirecting to doctor verification.');
-      navigate('/doctor-verification');
+      navigate('/dual-doctor');
       return;
     }
 
@@ -73,7 +73,9 @@ export default function DoctorVerificationPending() {
       localStorage.removeItem('doctorInfo');
       localStorage.removeItem('doctorId');
       // Do not clear hospital/doctorData to allow resume later
-    } catch (e) {}
+    } catch (e) {
+      console.log(e)
+    }
     navigate('/choose-role');
   };
   const handleResubmit = () => {

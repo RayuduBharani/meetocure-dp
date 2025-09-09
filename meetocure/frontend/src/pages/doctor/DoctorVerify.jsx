@@ -36,7 +36,9 @@ const DoctorVerify = () => {
           navigate("/doctor-verify");
         }
       }
-    } catch (_) {}
+    } catch (err) {
+      console.log(err);
+    }
   }, [navigate]);
 
   const handleChange = (e) => {
@@ -104,51 +106,54 @@ const DoctorVerify = () => {
         formData
       );
 
-      console.log(res);
-      if (res.data.doctor && res.data.doctor.registrationStatus === "verified") {
-        localStorage.setItem("doctorToken", res.data.token);
-        localStorage.setItem("doctorInfo", JSON.stringify(res.data.doctor));
+      // Handle successful response
+      const { data } = res;
+
+      // If login successful and verified
+      if (data.token && data.doctor.registrationStatus === "verified") {
+        localStorage.setItem("doctorToken", data.token);
+        localStorage.setItem("doctorInfo", JSON.stringify(data.doctor));
         toast.dismiss(loadingToast);
         toast.success("Login successful!");
         navigate("/doctor-dashboard");
-      } else if (res.data.isNewlyRegistered || (!res.data.doctor && res.data.registrationStatus === "under review by hospital")) {
-        const doctorId = res.data.doctorId;
-        if (doctorId) {
-          localStorage.setItem("doctorId", doctorId);
-        }
-        toast.dismiss(loadingToast);
-        toast.success("Registration submitted. Please fill hospital details.");
-        navigate("/hospital-form");
-      } else if (res.data.registrationStatus === "rejected" || res.data.doctor?.registrationStatus === "rejected") {
-        const doctorId = res.data.doctorId || res.data.doctor?.doctorId || res.data.doctor?._id;
-        if (res.data.doctor) {
-          localStorage.setItem("doctorInfo", JSON.stringify(res.data.doctor));
-        }
-        if (doctorId) {
-          localStorage.setItem("doctorId", doctorId);
-        }
-        toast.dismiss(loadingToast);
-        toast.error("Your verification was rejected. Please update and re-submit.");
-        navigate('/doctor-verify', { state: { from: 'doctor-auth', serverInfo: {
-          doctorId,
-          message: res.data.message || '',
-          registrationStatus: 'rejected',
-        } } });
-      } else if (res.data.registrationStatus === "under review by hospital" || res.data.doctor?.registrationStatus === "under review by hospital") {
-        const doctorId = res.data.doctorId || res.data.doctor?.doctorId;
-        // Store doctor info for later use in verification process
-        if (res.data.doctor) {
-          localStorage.setItem("doctorInfo", JSON.stringify(res.data.doctor));
-        }
-        // Also store doctorId separately for easy access
-        if (doctorId) {
-          localStorage.setItem("doctorId", doctorId);
-        }
-        toast.dismiss(loadingToast);
-        toast("Your account is pending verification.");
-        navigate(`/doctor-verify`);
       }
-    } catch (err) {
+      // If new registration, redirect to hospital form
+      else if (data.isNewlyRegistered) {
+        // Store basic doctor info for the hospital form
+        const doctorInfo = {
+          doctorId: data.doctorId,
+          email: formData.email,
+          mobileNumber: formData.mobileNumber,
+          registrationStatus: data.registrationStatus
+        };
+        localStorage.setItem("doctorInfo", JSON.stringify(doctorInfo));
+        localStorage.setItem("doctorId", data.doctorId);
+        
+        toast.dismiss(loadingToast);
+        setShowPopup(true);
+        toast.success("Registration submitted successfully! Redirecting to hospital verification...");
+        // Wait for 2 seconds to show the popup before redirecting
+        setTimeout(() => {
+          navigate("/hospital-form");
+        }, 1000);
+      }
+      // If existing user but not verified, redirect to verification status
+      else if (data.registrationStatus === "under review by hospital") {
+        toast.dismiss(loadingToast);
+        setShowPopup(true);
+        toast.success("Your registration is under review. Redirecting to verification status...");
+        // Wait for 2 seconds to show the popup before redirecting
+        setTimeout(() => {
+          navigate("/doctor-verify");
+        }, 1000);
+      }
+      // Handle other cases
+      else {
+        toast.dismiss(loadingToast);
+        toast.error(data.message || "Something went wrong");
+      }
+    } 
+    catch (err) {
       toast.dismiss(loadingToast);
       toast.error(err.response?.data?.message || "Login failed");
     }

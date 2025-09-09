@@ -7,6 +7,8 @@ const {
   getDoctorAppointments,
   updateAppointmentStatus,
   cancelAppointment,
+  acceptAppointment,
+  completeAppointment,
   getPatientAppointments,
 } = require("../controllers/appointmentController");
 const Availability = require("../models/Availability");
@@ -54,6 +56,12 @@ router.put("/:id/status", protect(["doctor"]), updateAppointmentStatus);
 
 //Doctor cancels appointment
 router.put("/:id/cancel", protect(["doctor"]), cancelAppointment);
+
+//Doctor accepts appointment
+router.put("/:id/accept", protect(["doctor"]), acceptAppointment);
+
+//Doctor completes appointment
+router.put("/:id/complete", protect(["doctor"]), completeAppointment);
 
 
 

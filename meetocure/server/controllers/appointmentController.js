@@ -323,12 +323,191 @@ const cancelAppointment = async (req, res) => {
     });
   }
 };
+
+// Accept appointment (specific function for acceptance)
+const acceptAppointment = async (req, res) => {
+  try {
+    const appointmentId = req.params.id;
+    
+    // Get doctor ID using the same logic as getDoctorAppointments
+    let doctorId;
+    if (req.user.doctorId) {
+      doctorId = req.user.doctorId;
+    } else if (req.user._id) {
+      doctorId = req.user._id;
+    } else {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Doctor ID not found" 
+      });
+    }
+
+    // Find the appointment
+    const appointment = await Appointment.findById(appointmentId);
+    if (!appointment) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Appointment not found" 
+      });
+    }
+
+    // Check if the doctor is authorized to accept this appointment
+    const appointmentDoctorId = appointment.doctor.toString();
+    const currentDoctorId = doctorId.toString();
+    
+    if (appointmentDoctorId !== currentDoctorId) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Not authorized to accept this appointment" 
+      });
+    }
+
+    // Check if appointment can be accepted
+    if (appointment.status === "completed") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Cannot accept a completed appointment" 
+      });
+    }
+
+    if (appointment.status === "cancelled") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Cannot accept a cancelled appointment" 
+      });
+    }
+
+    if (appointment.status === "accepted") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Appointment is already accepted" 
+      });
+    }
+
+    // Update appointment status to accepted
+    appointment.status = "accepted";
+    await appointment.save();
+
+    // Create notification for patient about acceptance
+    try {
+      await createNotification({
+        user: appointment.patient,
+        title: "Appointment Accepted",
+        message: `Your appointment on ${appointment.appointment_date.toLocaleDateString()} at ${appointment.appointment_time} has been accepted by the doctor`,
+        type: "success",
+        targetPath: "/patient/calendar",
+        metadata: { appointmentId: appointment._id, role: "patient" },
+      });
+    } catch (notificationError) {
+      console.warn("Failed to create acceptance notification:", notificationError?.message);
+    }
+
+    res.json({ 
+      success: true, 
+      message: "Appointment accepted successfully", 
+      appointment 
+    });
+  } catch (err) {
+    console.error("Error accepting appointment:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: err.message 
+    });
+  }
+};
+
+// Complete appointment (specific function for completion)
+const completeAppointment = async (req, res) => {
+  try {
+    const appointmentId = req.params.id;
+    
+    // Get doctor ID using the same logic as getDoctorAppointments
+    let doctorId;
+    if (req.user.doctorId) {
+      doctorId = req.user.doctorId;
+    } else if (req.user._id) {
+      doctorId = req.user._id;
+    } else {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Doctor ID not found" 
+      });
+    }
+
+    // Find the appointment
+    const appointment = await Appointment.findById(appointmentId);
+    if (!appointment) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Appointment not found" 
+      });
+    }
+
+    // Check if the doctor is authorized to complete this appointment
+    const appointmentDoctorId = appointment.doctor.toString();
+    const currentDoctorId = doctorId.toString();
+    
+    if (appointmentDoctorId !== currentDoctorId) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Not authorized to complete this appointment" 
+      });
+    }
+
+    // Check if appointment can be completed
+    if (appointment.status === "completed") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Appointment is already completed" 
+      });
+    }
+
+    if (appointment.status === "cancelled") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Cannot complete a cancelled appointment" 
+      });
+    }
+
+    // Update appointment status to completed
+    appointment.status = "completed";
+    await appointment.save();
+
+    // Create notification for patient about completion
+    try {
+      await createNotification({
+        user: appointment.patient,
+        title: "Appointment Completed",
+        message: `Your appointment on ${appointment.appointment_date.toLocaleDateString()} at ${appointment.appointment_time} has been completed`,
+        type: "info",
+        targetPath: "/patient/calendar",
+        metadata: { appointmentId: appointment._id, role: "patient" },
+      });
+    } catch (notificationError) {
+      console.warn("Failed to create completion notification:", notificationError?.message);
+    }
+
+    res.json({ 
+      success: true, 
+      message: "Appointment completed successfully", 
+      appointment 
+    });
+  } catch (err) {
+    console.error("Error completing appointment:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: err.message 
+    });
+  }
+};
  
 module.exports = {
   bookAppointment,
   getDoctorAppointments,
   updateAppointmentStatus,
   cancelAppointment,
+  acceptAppointment,
+  completeAppointment,
   getPatientAppointments,
   
 };

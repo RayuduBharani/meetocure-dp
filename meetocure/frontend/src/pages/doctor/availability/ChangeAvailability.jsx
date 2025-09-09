@@ -38,7 +38,7 @@ const handleConfirm = async () => {
     const loadingToast = toast.loading("Updating availability...");
 
     // Use PUT to update specific date (date comes from route param)
-    const base = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
+    const base = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
     await axios.put(
       `${base}/api/availability/${encodeURIComponent(date)}`,
       { slots: selectedSlots },

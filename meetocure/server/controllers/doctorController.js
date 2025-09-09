@@ -15,6 +15,10 @@ const getDoctorStats = async (req, res) => {
       return res.status(400).json({ message: "Doctor ID not found" });
     }
 
+    // Get doctor profile for consultation fee
+    const doctorProfile = await DoctorVerification.findOne({ doctorId: doctorId });
+    const consultationFee = doctorProfile?.consultationFee || 500;
+
     // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
     
@@ -22,55 +26,309 @@ const getDoctorStats = async (req, res) => {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+    
+    // Get last month dates for comparison
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
 
-    // Fetch statistics
+    // Get current year start and end dates
+    const yearStart = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
+    const yearEnd = new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0];
+
+    // Fetch comprehensive statistics
     const [
       todayAppointments,
       pendingAppointments,
+      acceptedAppointments,
       monthlyAppointments,
+      lastMonthAppointments,
+      yearlyAppointments,
       uniquePatients,
-      completedAppointments
+      completedAppointments,
+      cancelledAppointments,
+      monthlyCompletedAppointments,
+      lastMonthCompletedAppointments,
+      yearlyCompletedAppointments,
+      monthlyCancelledAppointments,
+      lastMonthCancelledAppointments,
+      yearlyCancelledAppointments,
+      totalEarnings,
+      monthlyEarnings,
+      lastMonthEarnings,
+      yearlyEarnings,
+      todayEarnings,
+      weeklyEarnings,
+      appointmentTypes,
+      monthlyAppointmentTrend,
+      patientAgeGroups,
+      genderDistribution
     ] = await Promise.all([
       // Today's appointments
       Appointment.countDocuments({ 
         doctor: doctorId, 
-        date: today 
+        appointment_date: { $gte: new Date(today), $lt: new Date(today + 'T23:59:59.999Z') }
       }),
       
       // Pending appointments (today and future)
       Appointment.countDocuments({ 
         doctor: doctorId, 
-        date: { $gte: today },
-        status: { $in: ['Upcoming', 'Pending'] }
+        appointment_date: { $gte: today },
+        status: 'pending'
+      }),
+      
+      // Accepted appointments (today and future)
+      Appointment.countDocuments({ 
+        doctor: doctorId, 
+        appointment_date: { $gte: today },
+        status: 'accepted'
       }),
       
       // Monthly appointments
       Appointment.countDocuments({ 
         doctor: doctorId, 
-        date: { $gte: monthStart, $lte: monthEnd }
+        appointment_date: { $gte: monthStart, $lte: monthEnd }
+      }),
+      
+      // Last month appointments
+      Appointment.countDocuments({ 
+        doctor: doctorId, 
+        appointment_date: { $gte: lastMonthStart, $lte: lastMonthEnd }
+      }),
+      
+      // Yearly appointments
+      Appointment.countDocuments({ 
+        doctor: doctorId, 
+        appointment_date: { $gte: yearStart, $lte: yearEnd }
       }),
       
       // Unique patients count
       Appointment.distinct('patient', { doctor: doctorId }),
       
+      // Total completed appointments
+      Appointment.countDocuments({ 
+        doctor: doctorId, 
+        status: 'completed'
+      }),
+      
+      // Total cancelled appointments
+      Appointment.countDocuments({ 
+        doctor: doctorId, 
+        status: 'cancelled'
+      }),
+      
       // Completed appointments this month
       Appointment.countDocuments({ 
         doctor: doctorId, 
-        date: { $gte: monthStart, $lte: monthEnd },
-        status: 'Completed'
-      })
+        appointment_date: { $gte: monthStart, $lte: monthEnd },
+        status: 'completed'
+      }),
+      
+      // Completed appointments last month
+      Appointment.countDocuments({ 
+        doctor: doctorId, 
+        appointment_date: { $gte: lastMonthStart, $lte: lastMonthEnd },
+        status: 'completed'
+      }),
+      
+      // Completed appointments this year
+      Appointment.countDocuments({ 
+        doctor: doctorId, 
+        appointment_date: { $gte: yearStart, $lte: yearEnd },
+        status: 'completed'
+      }),
+      
+      // Cancelled appointments this month
+      Appointment.countDocuments({ 
+        doctor: doctorId, 
+        appointment_date: { $gte: monthStart, $lte: monthEnd },
+        status: 'cancelled'
+      }),
+      
+      // Cancelled appointments last month
+      Appointment.countDocuments({ 
+        doctor: doctorId, 
+        appointment_date: { $gte: lastMonthStart, $lte: lastMonthEnd },
+        status: 'cancelled'
+      }),
+      
+      // Cancelled appointments this year
+      Appointment.countDocuments({ 
+        doctor: doctorId, 
+        appointment_date: { $gte: yearStart, $lte: yearEnd },
+        status: 'cancelled'
+      }),
+      
+      // Total earnings (all time)
+      Appointment.aggregate([
+        { $match: { doctor: doctorId, status: 'completed' } },
+        { $group: { _id: null, total: { $sum: '$payment.amount' } } }
+      ]),
+      
+      // Monthly earnings
+      Appointment.aggregate([
+        { $match: { doctor: doctorId, appointment_date: { $gte: new Date(monthStart), $lte: new Date(monthEnd) }, status: 'completed' } },
+        { $group: { _id: null, total: { $sum: '$payment.amount' } } }
+      ]),
+      
+      // Last month earnings
+      Appointment.aggregate([
+        { $match: { doctor: doctorId, appointment_date: { $gte: new Date(lastMonthStart), $lte: new Date(lastMonthEnd) }, status: 'completed' } },
+        { $group: { _id: null, total: { $sum: '$payment.amount' } } }
+      ]),
+      
+      // Yearly earnings
+      Appointment.aggregate([
+        { $match: { doctor: doctorId, appointment_date: { $gte: new Date(yearStart), $lte: new Date(yearEnd) }, status: 'completed' } },
+        { $group: { _id: null, total: { $sum: '$payment.amount' } } }
+      ]),
+      
+      // Today's earnings
+      Appointment.aggregate([
+        { $match: { doctor: doctorId, appointment_date: { $gte: new Date(today), $lt: new Date(today + 'T23:59:59.999Z') }, status: 'completed' } },
+        { $group: { _id: null, total: { $sum: '$payment.amount' } } }
+      ]),
+      
+      // Weekly earnings (last 7 days)
+      Appointment.aggregate([
+        { $match: { 
+          doctor: doctorId, 
+          appointment_date: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, 
+          status: 'completed' 
+        }},
+        { $group: { _id: null, total: { $sum: '$payment.amount' } } }
+      ]),
+      
+      // Appointment types distribution
+      Appointment.aggregate([
+        { $match: { doctor: doctorId } },
+        { $group: { _id: '$appointment_type', count: { $sum: 1 } } }
+      ]),
+      
+      // Monthly appointment trend (last 6 months)
+      Appointment.aggregate([
+        { $match: { 
+          doctor: doctorId, 
+          appointment_date: { $gte: new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000) } 
+        }},
+        { $group: { 
+          _id: { 
+            year: { $year: '$appointment_date' }, 
+            month: { $month: '$appointment_date' } 
+          }, 
+          count: { $sum: 1 } 
+        }},
+        { $sort: { '_id.year': 1, '_id.month': 1 } }
+      ]),
+      
+      // Patient age groups
+      Appointment.aggregate([
+        { $match: { doctor: doctorId } },
+        { $group: { 
+          _id: { 
+            $switch: {
+              branches: [
+                { case: { $lt: ['$patientInfo.age', 18] }, then: '0-17' },
+                { case: { $lt: ['$patientInfo.age', 30] }, then: '18-29' },
+                { case: { $lt: ['$patientInfo.age', 45] }, then: '30-44' },
+                { case: { $lt: ['$patientInfo.age', 60] }, then: '45-59' },
+                { case: { $gte: ['$patientInfo.age', 60] }, then: '60+' }
+              ],
+              default: 'Unknown'
+            }
+          }, 
+          count: { $sum: 1 } 
+        }}
+      ]),
+      
+      // Gender distribution
+      Appointment.aggregate([
+        { $match: { doctor: doctorId } },
+        { $group: { _id: '$patientInfo.gender', count: { $sum: 1 } } }
+      ])
     ]);
 
-    // Calculate earnings (assuming ₹500 per completed appointment)
-    const earnings = completedAppointments * 500;
+    // Calculate earnings with fallback to consultation fee
+    const totalEarningsAmount = totalEarnings[0]?.total || (completedAppointments * consultationFee);
+    const monthlyEarningsAmount = monthlyEarnings[0]?.total || (monthlyCompletedAppointments * consultationFee);
+    const lastMonthEarningsAmount = lastMonthEarnings[0]?.total || (lastMonthCompletedAppointments * consultationFee);
+    const yearlyEarningsAmount = yearlyEarnings[0]?.total || (yearlyCompletedAppointments * consultationFee);
+    const todayEarningsAmount = todayEarnings[0]?.total || 0;
+    const weeklyEarningsAmount = weeklyEarnings[0]?.total || 0;
+
+    // Calculate growth percentages
+    const monthlyGrowth = lastMonthEarningsAmount > 0 
+      ? ((monthlyEarningsAmount - lastMonthEarningsAmount) / lastMonthEarningsAmount * 100).toFixed(1)
+      : 0;
+    
+    const appointmentGrowth = lastMonthAppointments > 0 
+      ? ((monthlyAppointments - lastMonthAppointments) / lastMonthAppointments * 100).toFixed(1)
+      : 0;
+
+    // Calculate average earnings per patient
+    const avgEarningsPerPatient = uniquePatients.length > 0 
+      ? (totalEarningsAmount / uniquePatients.length).toFixed(2)
+      : 0;
+
+    // Calculate completion rate
+    const totalAppointments = completedAppointments + cancelledAppointments;
+    const completionRate = totalAppointments > 0 
+      ? ((completedAppointments / totalAppointments) * 100).toFixed(1)
+      : 0;
 
     const stats = {
+      // Basic stats
       todayAppointments,
       pendingAppointments,
+      acceptedAppointments,
       monthlyAppointments,
+      yearlyAppointments,
       uniquePatients: uniquePatients.length,
-      earnings,
-      completedAppointments
+      completedAppointments,
+      cancelledAppointments,
+      
+      // Earnings
+      totalEarnings: totalEarningsAmount,
+      monthlyEarnings: monthlyEarningsAmount,
+      yearlyEarnings: yearlyEarningsAmount,
+      todayEarnings: todayEarningsAmount,
+      weeklyEarnings: weeklyEarningsAmount,
+      avgEarningsPerPatient: parseFloat(avgEarningsPerPatient),
+      
+      // Growth metrics
+      monthlyGrowth: parseFloat(monthlyGrowth),
+      appointmentGrowth: parseFloat(appointmentGrowth),
+      completionRate: parseFloat(completionRate),
+      
+      // Detailed analytics
+      appointmentTypes: appointmentTypes.reduce((acc, item) => {
+        acc[item._id] = item.count;
+        return acc;
+      }, {}),
+      
+      monthlyTrend: monthlyAppointmentTrend.map(item => ({
+        month: item._id.month,
+        year: item._id.year,
+        count: item.count
+      })),
+      
+      patientAgeGroups: patientAgeGroups.reduce((acc, item) => {
+        acc[item._id] = item.count;
+        return acc;
+      }, {}),
+      
+      genderDistribution: genderDistribution.reduce((acc, item) => {
+        acc[item._id] = item.count;
+        return acc;
+      }, {}),
+      
+      // Additional metrics
+      consultationFee,
+      monthlyCompletedAppointments,
+      monthlyCancelledAppointments,
+      lastMonthCompletedAppointments,
+      lastMonthCancelledAppointments,
+      yearlyCompletedAppointments,
+      yearlyCancelledAppointments
     };
 
     res.json(stats);

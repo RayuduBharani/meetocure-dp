@@ -37,6 +37,26 @@ router.get("/", async (req, res) => {
   }
 });
 
+// get verification status
+router.get("/verification-status/:doctorId", async (req, res) => {
+  try {
+    const doctorId = req.params.doctorId;
+    const doctor = await DoctorVerificationShema.findOne({ doctorId: doctorId });
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+    res.status(200).json({
+      doctorId: doctor.doctorId,
+      registrationStatus: doctor.registrationStatus,
+      message: "docter is registered",
+      doctor: doctor,
+    });
+  } catch (error) {
+    console.error("Error fetching verification status:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Protected routes for doctor profile management
 router.get("/profile", protect(["doctor"]), getDoctorProfile);
 router.put("/profile", protect(["doctor"]),updateDoctorProfile);
