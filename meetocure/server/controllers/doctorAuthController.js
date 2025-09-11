@@ -3,51 +3,39 @@ const jwt = require("jsonwebtoken");
 const Doctor = require("../models/DoctorShema");
 const Otp = require("../models/Otp");
 const Patient = require("../models/Patient");
-const Notification = require("../models/Notification");
 const twilio = require("twilio");
 
 const JWT_SECRET = process.env.JWT_SECRET;
-const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_MESSAGING_SERVICE_SID } = process.env;
+const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_VERIFY_SERVICE_SID } = process.env;
 
 const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
 
 
 // ========== SEND OTP ==========
-const sendOtp = async (req, res) => {
+const sendOtp =async (req, res) => {
   try {
-    const { phone } = req.body;
+    const phone = req.body.phone;
     if (!phone) return res.status(400).json({ message: "Phone required" });
 
+    // block if this number is already registered as a patient
     const existingPatient = await Patient.findOne({ phone });
     if (existingPatient) {
       return res.status(400).json({ message: "This phone is already registered as a patient" });
     }
-    // Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    const salt = await bcrypt.genSalt(10);
-    const codeHash = await bcrypt.hash(otp, salt);
+    // Send OTP via Twilio Verify
+    await client.verify.v2.services(TWILIO_VERIFY_SERVICE_SID)
+      .verifications.create({ to: phone, channel: "sms" });
 
-    await Otp.findOneAndUpdate(
-      { phone },
-      { codeHash, expiresAt: Date.now() + 5 * 60 * 1000, attempts: 0 },
-      { upsert: true, new: true }
-    );
-    // await client.messages.create({
-    //   body: `Your verification code is: ${otp}`,
-    //   messagingServiceSid: TWILIO_MESSAGING_SERVICE_SID,
-    //   to: phone,
-    // });
-
-    console.log(`OTP for ${phone}: ${otp}`); // For testing purposes only
     const doctor = await Doctor.findOne({ mobileNumber: phone });
+
     return res.json({
       success: true,
       message: "OTP sent successfully",
       registrationStatus: doctor ? doctor.registrationStatus : "under review by hospital",
     });
   } catch (err) {
-    console.error("Send OTP Error:", err);
+    console.error("Doctor Send OTP Error:", err);
     res.status(500).json({ message: "Failed to send OTP" });
   }
 };
@@ -55,34 +43,22 @@ const sendOtp = async (req, res) => {
 // ========== VERIFY OTP ==========
 const verifyOtp = async (req, res) => {
   try {
-    const { phone, otp } = req.body;
-    if (!phone || !otp) return res.status(400).json({ message: "Phone and OTP required" });
+    const phone = req.body.phone;
+    const code = req.body.otp;
 
-    const record = await Otp.findOne({ phone });
-    if (!record) return res.status(400).json({ message: "No OTP found" });
-
-    if (record.expiresAt < Date.now()) {
-      await Otp.deleteOne({ phone });
-      return res.status(400).json({ message: "OTP expired" });
+    if (!phone || !code) {
+      return res.status(400).json({ message: "Phone and OTP required" });
     }
 
-    if (record.attempts >= 5) {
-      await Otp.deleteOne({ phone });
-      return res.status(400).json({ message: "Too many attempts. Request a new OTP" });
+    const check = await client.verify.v2.services(TWILIO_VERIFY_SERVICE_SID)
+      .verificationChecks.create({ to: phone, code });
+    if (check.status !== "approved") {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
     }
-
-    const isMatch = await bcrypt.compare(otp, record.codeHash);
-    if (!isMatch) {
-      record.attempts += 1;
-      await record.save();
-      return res.status(400).json({ message: "Invalid OTP" });
-    }
-
-    await Otp.deleteOne({ phone });
 
     return res.json({ success: true, message: "OTP verified successfully" });
   } catch (err) {
-    console.error("Verify OTP Error:", err);
+    console.error("Doctor Verify OTP Error:", err);
     res.status(500).json({ message: "OTP verification failed" });
   }
 };

@@ -1,13 +1,10 @@
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
 const twilio = require("twilio");
 const Patient = require("../models/Patient");
-const Otp = require("../models/Otp");
 require("dotenv").config();
 const {
   TWILIO_ACCOUNT_SID,
   TWILIO_AUTH_TOKEN,
-  TWILIO_MESSAGING_SERVICE_SID,
   JWT_SECRET,
 } = process.env;
 
@@ -28,32 +25,18 @@ const normalizePhone = (p) => {
 };
 
 // Send OTP
+// Send OTP
 exports.sendOtp = async (req, res) => {
-  console.log("hello");   //  Check if this prints when API is hit
   try {
-    const phone = normalizePhone(req.body.phone);  //  If this throws, it will go to catch
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const phone = normalizePhone(req.body.phone);
 
-    const codeHash = await bcrypt.hash(otp, 10);
-    const expiresAt = new Date(Date.now() + 2 * 60 * 1000);
+    await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
+      .verifications.create({ to: phone, channel: "sms" });
 
-    await Otp.findOneAndUpdate(
-      { phone },
-      { codeHash, expiresAt, attempts: 0 },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
-
-    await client.messages.create({
-      body: `Your verification code is From MeetOCure: ${otp}. It expires in 2 minutes.`,
-      messagingServiceSid: TWILIO_MESSAGING_SERVICE_SID,
-      to: phone,
-    });
-    console.log(`OTP for ${phone}: ${otp}`); //  Log OTP for testing
-
-    return res.json({ success: true, message: "OTP sent" });  // should always return
+    res.json({ success: true, message: "OTP sent" });
   } catch (err) {
-    console.error("Error in sendOtp:", err);  // 👈 log actual error
-    return res.status(400).json({ success: false, message: err.message });
+    console.error(err);
+    res.status(400).json({ success: false, message: err.message });
   }
 };
 
@@ -63,60 +46,21 @@ exports.sendOtp = async (req, res) => {
 exports.verifyOtp = async (req, res) => {
   try {
     const phone = normalizePhone(req.body.phone);
-    const code = (req.body.otp || "").trim();
+    const code = req.body.otp;
 
-    const doc = await Otp.findOne({ phone });
-    if (!doc) return res.status(400).json({ message: "OTP not found. Please resend." });
+    const check = await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
+      .verificationChecks.create({ to: phone, code });
 
-    if (doc.expiresAt < new Date()) {
-      await Otp.deleteOne({ phone });
-      return res.status(400).json({ message: "OTP expired. Please resend." });
+    if (check.status !== "approved") {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
     }
-
-    if (doc.attempts >= 5) {
-      await Otp.deleteOne({ phone });
-      return res.status(429).json({ message: "Too many attempts. Please resend OTP." });
-    }
-
-    const ok = await bcrypt.compare(code, doc.codeHash);
-    if (!ok) {
-      doc.attempts += 1;
-      await doc.save();
-      return res.status(400).json({ message: "Invalid OTP" });
-    }
-
 
     let patient = await Patient.findOne({ phone });
-    if (!patient) {
-      patient = await Patient.create({ phone, notifications: [] });
-    }
-
-    // Send welcome notification
-    const { createNotification } = require("./notificationController");
-    const notification = await createNotification({
-      userId: patient._id,
-      title: "Welcome!",
-      message: "Thank you for registering with MeetoCure.",
-      type: "GENERAL"
-    });
-    // Emit socket event
-    const io = req.app.get("io");
-    if (io) io.to(patient._id.toString()).emit("receiveNotification", notification);
+    if (!patient) patient = await Patient.create({ phone, notifications: [] });
 
     const token = signToken(patient);
 
-    await Otp.deleteOne({ phone });
-
-    res.json({
-      success: true,
-      token,
-      patient: {
-        _id: patient._id,
-        phone: patient.phone,
-        notifications: patient.notifications,
-        role: "patient",
-      },
-    });
+    res.json({ success: true, token, patient });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
