@@ -1,3 +1,6 @@
+import LinkDoctorsToHospital from "./pages/admin/LinkDoctorsToHospital";
+{/* Admin: Link Doctors to Hospital */ }
+<Route path="/admin/link-doctors-hospital" element={<LinkDoctorsToHospital />} />
 import React from "react";
 import { Routes, Route, Router } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
@@ -37,7 +40,7 @@ import PatientDetails from "./pages/patient/Appointmentpage/PatientDetails";
 import Payment from "./pages/patient/Appointmentpage/Payment";
 import ChatPage from "./pages/patient/contactpages/Chatpage";
 import ContactUS from "./pages/patient/contactpages/ContactUs";
-import HospitalsPage from "./pages/patient/hospitalpages/HospitalDetailsPage-hos";
+import HospitalDetails from "./pages/patient/hospitalpages/HospitalDetails";
 import WalletPage from "./pages/patient/walletpages/WalletPage";
 import PageNotFound from "./pages/patient/Page-NotFound";
 import ContactUs from "./pages/patient/contactpages/ContactUs";
@@ -77,6 +80,8 @@ function App() {
         <Route path="/doctor-verify" element={<DcoterVerificationPending />} />
 
         {/* Doctor Routes */}
+        {/* Hospital Details Route */}
+        <Route path="/hospital/:id" element={<HospitalDetails />} />
         {/* <Route element={<PrivateRoute allowedRoles={['doctor']} />}> */}
         <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
         <Route path="/doctor/appointments" element={<DoctorAppointmentsPage />} />
@@ -111,17 +116,17 @@ function App() {
         <Route path="/location" element={<Location />} />
         <Route path="/patient/chat" element={<ChatPage />} />
         <Route path="/patient/contact-us" element={<ContactUs />} />
-        <Route path="/patient/hospitals" element={<HospitalsPage />} />
+        {/* <Route path="/patient/hospitals" element={<HospitalsPage />} /> */}
         <Route path="/patient/wallet" element={<WalletPage />} />
         <Route path="/doctorspages/Cards-data" element={<CardsData />} />
         <Route path="/hospitalpages/Cards-data" element={<HospitalCardsData />} />
-        <Route path="/details/:id" element={<DetailsPage />}/>
+        <Route path="/details/:id" element={<DetailsPage />} />
         <Route path="/details/:type/:id" element={<DetailsPage />} />
         <Route path="/hospital/:hospitalId/doctors" element={<HospitalDoctorsPage />} />
         <Route path="/patient/appointments/Query" element={<PatientPublicForm />} />
         {/* </Route> */}
         {/* Notifications Route */}
-        
+
 
 
         {/* Patient Appointment Flow (Wrapped in Context) */}

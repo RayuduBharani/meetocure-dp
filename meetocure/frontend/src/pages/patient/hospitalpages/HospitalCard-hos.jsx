@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { HeartIcon, HospitalIcon, LocationPinIcon, RouteIcon, StarIcon } from './Icons';
 
 
@@ -17,60 +18,88 @@ const StarRating = ({ rating }) => {
 
 
 
-const HospitalCard= ({ hospital, onToggleFavorite }) => {
-    const [isImageLoaded, setIsImageLoaded] = useState(false);
+import { useNavigate } from "react-router-dom";
+
+const HospitalCard = ({ hospital, onClick }) => (
+    <div className="bg-white rounded-xl shadow p-5 hover:shadow-md transition cursor-pointer" onClick={onClick}>
+        <div className="w-full h-44 overflow-hidden rounded-lg mb-4">
+            <img
+                src={hospital.hospitalImage || "/assets/default-hospital.png"}
+                alt={hospital.hospitalName || "Hospital"}
+                className="w-full h-full object-cover object-top"
+            />
+        </div>
+        <h3 className="text-lg font-semibold text-[#1F2A37]">
+            {hospital.hospitalName || "Unnamed Hospital"}
+        </h3>
+        <p className="text-sm text-gray-500">
+            {hospital.address || "No address"}
+        </p>
+        <p className="text-sm text-gray-500">
+            {hospital.contact || "No contact"}
+        </p>
+    </div>
+);
+
+const HospitalCardList = ({ title = "Nearby Hospitals" }) => {
+    const navigate = useNavigate();
+    const initialVisibleCount = 4;
+    const [hospitals, setHospitals] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [visibleCount, setVisibleCount] = useState(initialVisibleCount);
+    // Remove selectedHospital, hospitalDoctors, loadingDoctors
+
+    useEffect(() => {
+        const fetchHospitals = async () => {
+            try {
+                setLoading(true);
+                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/hospitals/hospitallogins`);
+                const data = await res.json();
+                setHospitals(data);
+                setError(null);
+            } catch {
+                setError("Failed to fetch hospitals");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchHospitals();
+    }, []);
+
+    const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
+    const itemsToShow = hospitals?.slice(0, visibleCount);
+
+    // Remove useEffect for selectedHospital
+
+    if (loading) return <div>Loading hospitals...</div>;
+    if (error) return <div className="text-red-500">{error}</div>;
+
+    // Remove conditional rendering for selectedHospital
 
     return (
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden flex p-4 space-x-4 h-full">
-            <div className="relative w-24 h-24 flex-shrink-0">
-                {!isImageLoaded && (
-                    <div className="absolute inset-0 bg-gray-200 rounded-xl animate-pulse"></div>
-                )}
-                <img 
-                    src={hospital.imageUrl} 
-                    alt={hospital.name} 
-                    className={`w-full h-full object-cover rounded-xl transition-opacity duration-300 ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
-                    onLoad={() => setIsImageLoaded(true)}
-                    loading="lazy"
-                />
+        <div className="mb-10">
+            <div className="mb-6">
+                <h2 className="text-2xl font-semibold text-[#1F2A37]">{title}</h2>
             </div>
-            <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start space-x-2">
-                    <h3 className="font-bold text-gray-800 text-lg truncate">{hospital.name}</h3>
-                    <button 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onToggleFavorite(hospital.id);
-                        }} 
-                        className="transition-colors flex-shrink-0"
-                        aria-label={hospital.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {itemsToShow?.map((hospital) => (
+                    <HospitalCard key={hospital._id} hospital={{ ...hospital, hospitalImage: hospital.hospitalImage || "/assets/image.png" }} onClick={() => navigate(`/hospital/${hospital._id}`)} />
+                ))}
+            </div>
+            {visibleCount < hospitals?.length && (
+                <div className="flex justify-center mt-6">
+                    <button
+                        onClick={handleLoadMore}
+                        className="px-4 py-2 bg-[#0A4D68] text-white rounded-md hover:bg-[#083c52]"
                     >
-                        <HeartIcon className={`w-6 h-6 ${hospital.isFavorite ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`} isFilled={hospital.isFavorite} />
+                        Load More
                     </button>
                 </div>
-
-                <div className="mt-2 space-y-2 text-sm text-gray-600">
-                    <div className="flex items-center space-x-2">
-                        <RouteIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <span className="truncate">{hospital.distance.toFixed(1)} km / {hospital.time}min</span>
-                         <div className="ml-auto flex items-center bg-gray-100 px-2 py-1 rounded-md text-xs flex-shrink-0">
-                            <HospitalIcon className="w-3 h-3 mr-1" />
-                            <span>{hospital.type}</span>
-                        </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <LocationPinIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <span className="truncate">{hospital.location}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <span className="font-semibold">{hospital.rating.toFixed(1)}</span>
-                        <StarRating rating={hospital.rating} />
-                        <span className="text-gray-500 truncate">({hospital.reviews} Reviews)</span>
-                    </div>
-                </div>
-            </div>
+            )}
         </div>
     );
 };
 
-export default HospitalCard;
+export default HospitalCardList;
+// export default HospitalCard;

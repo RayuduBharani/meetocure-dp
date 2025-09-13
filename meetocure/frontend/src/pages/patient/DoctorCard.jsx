@@ -38,12 +38,6 @@ const DoctorCardList = ({ title, doctors }) => {
     <div className="mb-10">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-semibold text-[#1F2A37]">{title}</h2>
-        <Link
-          to="/doctorspages/Cards-data"
-          className="text-sm text-[#0A4D68] hover:underline font-medium"
-        >
-          See All
-        </Link>
       </div>
 
       {/* Grid of doctors */}

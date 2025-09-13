@@ -13,7 +13,6 @@ import {
 } from "react-icons/fa";
 import TopIcons from "../../../components/PatientTopIcons";
 import LogoutModal from "../../../components/LogoutModal";
-import { motion } from "framer-motion";
 import { API_BASE_URL } from "../../../lib/config";
 
 const options = [
@@ -46,7 +45,7 @@ const PatientProfilePage = () => {
         setPatientInfo({
           name: data.name,
           phone: data.phone,
-          profileImage: data.photo || " ",
+          photo: data.photo || " ",
         });
       } catch (error) {
         console.error("Failed to fetch patient info:", error);
@@ -79,7 +78,7 @@ const PatientProfilePage = () => {
         <TopIcons />
       </div>
 
-      <motion.div
+      <div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -87,23 +86,23 @@ const PatientProfilePage = () => {
       >
         <div className="relative mb-4">
           <img
-            src={patientInfo.profileImage || ""}
+            src={patientInfo.photo || "/default-avatar.png"}
             alt="Profile"
             className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md"
           />
-         
+
         </div>
         <h2 className="text-xl font-semibold text-[#0A4D68] mb-1">
-          {patientInfo.name || "loading..."}
+          {patientInfo.name || "Add your name"}
         </h2>
         <p className="text-[#6B7280] mb-6">
-          {patientInfo.phone ? `${patientInfo.phone}` : "Loading..."}
+          {patientInfo.phone ? `${patientInfo.phone}` : "Add your phone number"}
         </p>
-      </motion.div>
+      </div>
 
       <div className="max-w-3xl mx-auto px-6 mt-10 space-y-4">
         {options.map((option, index) => (
-          <motion.div
+          <div
             key={index}
             onClick={() => handleOptionClick(option.path)}
             initial={{ opacity: 0, y: 20 }}
@@ -121,7 +120,7 @@ const PatientProfilePage = () => {
             <span className="text-gray-300 text-xl font-light group-hover:text-gray-500">
               &gt;
             </span>
-          </motion.div>
+          </div>
         ))}
       </div>
 

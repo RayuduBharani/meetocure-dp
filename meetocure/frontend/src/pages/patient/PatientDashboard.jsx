@@ -8,7 +8,7 @@ import HeroCarousel from "../../components/HeroBanners";
 import SidebarNavPatient from "../../components/SidebarNavPatient";
 import FloatingContactButton from "../../components/FloatingContactButton";
 import CardList from './CardList';
-import { allHospitalsData } from './hospitalpages/HospitalsData';
+import HospitalCardList from './hospitalpages/HospitalCard-hos';
 import DoctorCardList from "./DoctorCard";
 
 
@@ -19,12 +19,31 @@ const PatientDashboard = () => {
   const routerLocation = useRouterLocation();
 
   const [city, setCity] = useState("Vijayawada");
-  const [doctors, setDoctors] = useState([]); 
+  const [doctors, setDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [errorDoctors, setErrorDoctors] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [filteredDoctors, setFilteredDoctors] = useState([]);
   const [filteredHospitals, setFilteredHospitals] = useState([]);
+
+  // Example static hospitals data (replace with your actual data or fetch from API)
+  const allHospitalsData = [
+    {
+      id: 1,
+      name: "City Hospital",
+      specialty: "Cardiology",
+      type: "Hospital",
+      image: "/assets/hospitals/city-hospital.png"
+    },
+    {
+      id: 2,
+      name: "Smile Dental Clinic",
+      specialty: "Dentistry",
+      type: "Clinic",
+      image: "/assets/hospitals/smile-dental.png"
+    },
+    // Add more hospital objects as needed
+  ];
 
 
   useEffect(() => {
@@ -44,7 +63,7 @@ const PatientDashboard = () => {
     'vaccination': ['Vaccination', 'Immunization', 'Vaccine']
   };
 
- const handleCategoryClick = async (category) => {
+  const handleCategoryClick = async (category) => {
     setSelectedCategory(category);
     setLoadingDoctors(true);
     setErrorDoctors(null);
@@ -54,7 +73,7 @@ const PatientDashboard = () => {
         params: { category },
       });
       const mappedDoctors = resp.data.map((doc) => ({
-        id: doc._id,
+        id: doc.doctorId,
         fullName: doc.fullName,
         primarySpecialization: doc.primarySpecialization || doc.specialization,
         category: doc.category,
@@ -100,7 +119,7 @@ const PatientDashboard = () => {
     return titles[category.toLowerCase()] || category;
   };
 
- useEffect(() => {
+  useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
       console.warn("No auth token found. Cannot fetch protected routes.");
@@ -109,30 +128,30 @@ const PatientDashboard = () => {
 
     setLoadingDoctors(true);
     axios
-  .get(`${import.meta.env.VITE_BACKEND_URL}/api/doctor`)
-  .then((res) => {
-    const mappedDoctors = res.data.map((doc) => ({
-      id: doc.doctorId,
-      fullName: doc.fullName,
-      primarySpecialization: doc.primarySpecialization || doc.specialization,
-      category: doc.category,
-      profileImage: doc.profileImage || "/assets/default-doctor.png", // fallback if no photo
-    }));
-    setDoctors(mappedDoctors);
-    setErrorDoctors(null);
-  })
-  .catch((err) => {
-    setErrorDoctors(err.response?.data?.message || err.message);
-  })
-  .finally(() => setLoadingDoctors(false));
+      .get(`${import.meta.env.VITE_BACKEND_URL}/api/doctor`)
+      .then((res) => {
+        const mappedDoctors = res.data.map((doc) => ({
+          id: doc.doctorId,
+          fullName: doc.fullName,
+          primarySpecialization: doc.primarySpecialization || doc.specialization,
+          category: doc.category,
+          profileImage: doc.profileImage || "/assets/default-doctor.png", // fallback if no photo
+        }));
+        setDoctors(mappedDoctors);
+        setErrorDoctors(null);
+      })
+      .catch((err) => {
+        setErrorDoctors(err.response?.data?.message || err.message);
+      })
+      .finally(() => setLoadingDoctors(false));
 
   }, []);
 
   return (
     <div className="flex font-[Poppins] bg-[#F8FAFC] min-h-screen">
-     <SidebarNavPatient 
-  handleCategoryClick={handleCategoryClick} 
-/>
+      <SidebarNavPatient
+        handleCategoryClick={handleCategoryClick}
+      />
 
       <div className="flex-1 min-h-screen px-6 py-6 pb-20 md:pb-8">
         {/* Header */}
@@ -190,22 +209,13 @@ const PatientDashboard = () => {
 
         {!selectedCategory ? (
           <>
-            {/* Search */}
-            <div className="mb-6">
-              <input
-                type="text"
-                placeholder="Search for doctors or specialties..."
-                className="w-full max-w-xl px-5 py-3 border rounded-xl shadow-sm bg-white focus:outline-none"
-              />
-            </div>
-
             {/* Hero */}
             <div className="mb-10">
               <HeroCarousel height="h-64" />
             </div>
 
             {/* Categories */}
-            <SectionHeader title="Categories" seeAllLink="/doctorspages/Cards-data" />
+            <SectionHeader title="Categories" />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-8 mb-16">
               {categories.map((item) => (
                 <div
@@ -258,7 +268,7 @@ const PatientDashboard = () => {
                   <>
                     {/* <CardList title="Nearby Doctors" data={doctors} type="doctor" /> */}
                     <DoctorCardList title="Nearby Doctors" doctors={doctors} type="doctor" />
-                    <CardList title="Nearby Hospitals" data={allHospitalsData} type="hospital" />
+                    <HospitalCardList title="Nearby Hospitals" />
                   </>
                 )}
               </div>
@@ -290,14 +300,6 @@ const PatientDashboard = () => {
                 />
               )}
 
-              {filteredHospitals.length > 0 && (
-                <CardList
-                  title={`${getCategoryTitle(selectedCategory)} Hospitals & Clinics`}
-                  data={filteredHospitals}
-                  type="hospital"
-                />
-              )}
-
               {filteredDoctors.length === 0 && filteredHospitals.length === 0 && !loadingDoctors && !errorDoctors && (
                 <div className="text-center py-16">
                   <div className="text-gray-500 text-lg mb-4">
@@ -318,18 +320,10 @@ const PatientDashboard = () => {
     </div>
   );
 };
-const SectionHeader = ({ title, seeAllLink }) => (
-  <div className="flex justify-between items-center mb-6">
-  <h2 className="text-2xl font-semibold text-[#1F2A37]">{title}</h2>
-  {seeAllLink && (
-    <Link
-      to={seeAllLink}
-      className="text-sm text-[#0A4D68] hover:underline font-medium"
-    >
-      See All
-    </Link>
-  )}
-</div>
+const SectionHeader = ({ title }) => (
+  <div className="mb-6">
+    <h2 className="text-2xl font-semibold text-[#1F2A37]">{title}</h2>
+  </div>
 
 );
 

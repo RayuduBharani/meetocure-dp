@@ -1,20 +1,6 @@
 const Patient = require("../models/Patient");
 const PatientDetails = require("../models/PatientDetails");
-const cloudinary = require('../utils/cloudinary');
-// replace previous streamifier-based upload helper with this
-const uploadBufferToCloudinary = (buffer, folder = "patient_profiles", filename) => {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { folder, public_id: filename, resource_type: 'image' },
-      (error, result) => {
-        if (error) return reject(error);
-        resolve(result.secure_url);
-      }
-    );
-    // end stream with buffer (no external streamifier required)
-    stream.end(buffer);
-  });
-};
+const { uploadBufferToCloudinary } = require('../utils/cloudinary');
 /**
  * GET /api/patient/profile/get
  */
@@ -71,7 +57,7 @@ exports.createOrUpdateProfile = async (req, res) => {
         photoUrl = await uploadBufferToCloudinary(req.file.buffer, "patient_profiles", filename);
       } catch (uploadErr) {
         console.error("Cloudinary upload error:", uploadErr);
-        return res.status(500).json({ message: "Failed to upload image" });
+        return res.status(500).json({ message: "Failed to upload image", error: uploadErr.message, stack: uploadErr.stack });
       }
     } else if (req.body.photo) {
       // Accept photo string (URL or dataURL) from form-data
@@ -86,16 +72,20 @@ exports.createOrUpdateProfile = async (req, res) => {
       ...(photoUrl ? { photo: photoUrl } : {}),
     };
 
-    const updated = await PatientDetails.findOneAndUpdate(
-      { patient: patientId },
-      { $set: payload, $setOnInsert: { patient: patientId } },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
-    );
-
-    return res.json(updated);
+    try {
+      const updated = await PatientDetails.findOneAndUpdate(
+        { patient: patientId },
+        { $set: payload, $setOnInsert: { patient: patientId } },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+      );
+      return res.json(updated);
+    } catch (dbErr) {
+      console.error("MongoDB update error:", dbErr);
+      return res.status(500).json({ message: "Failed to update patient details", error: dbErr.message, stack: dbErr.stack });
+    }
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Server error" });
+    console.error("General error in createOrUpdateProfile:", err);
+    return res.status(500).json({ message: "Server error", error: err.message, stack: err.stack });
   }
 };
 

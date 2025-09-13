@@ -5,7 +5,7 @@ import { FaArrowLeft } from 'react-icons/fa';
 import { HeartIcon, HospitalIcon as BuildingIcon, LocationPinIcon, RouteIcon } from './Icons';
 import { FaRegCommentDots } from 'react-icons/fa';
 import { BsStarFill } from 'react-icons/bs';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 const StatItem = ({ icon, value, label }) => (
     <div className="flex flex-col items-center justify-center space-y-2">
@@ -36,7 +36,8 @@ const ReviewCard = ({ review }) => (
     </div>
 );
 
-const HospitalDetailsPage = ({ hospitalId, onBack, onToggleFavorite }) => {
+const HospitalDetailsPage = ({ hospitalId, onToggleFavorite }) => {
+    const navigate = useNavigate();
     const [hospital, setHospital] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -77,7 +78,7 @@ const HospitalDetailsPage = ({ hospitalId, onBack, onToggleFavorite }) => {
                 <div className="bg-white rounded-2xl shadow-lg overflow-hidden p-4 flex flex-col sm:flex-row sm:space-x-4">
                     <div className="relative w-full sm:w-28 h-28 flex-shrink-0 mb-4 sm:mb-0">
                         <img
-                            src={hospital.imageUrl || 'https://via.placeholder.com/150'}
+                            src={hospital.imageUrl || "/assets/image.png"}
                             alt={hospital.name}
                             className="w-full h-full object-cover rounded-xl"
                             loading="lazy"

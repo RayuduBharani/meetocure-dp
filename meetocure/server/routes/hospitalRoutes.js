@@ -1,3 +1,5 @@
+const { getAllHospitalLogins, getDoctorsForHospitalLogin, addDoctorsToHospitalLogin } = require("../controllers/hospitalController");
+
 const express = require("express");
 const router = express.Router();
 const protect = require("../middleware/authMiddleware");
@@ -6,8 +8,17 @@ const {
   getAllHospitals,
   getHospitalById,
   filterHospitals,
-  getNearbyHospitals, 
+  getNearbyHospitals,
 } = require("../controllers/hospitalController");
+
+// Add doctors to a hospital login document
+router.post("/hospitallogins/:id/doctors", addDoctorsToHospitalLogin);
+
+// Get doctors for a hospital login by hospital id
+router.get("/hospitallogins/:id/doctors", getDoctorsForHospitalLogin);
+
+// Get all hospitals from HospitalLogin collection
+router.get("/hospitallogins", getAllHospitalLogins);
 
 // Doctor adds hospital
 router.post("/", protect(["doctor"]), createHospital);
