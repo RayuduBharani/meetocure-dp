@@ -1,16 +1,15 @@
-// models/Chat.js
 const mongoose = require("mongoose");
 
-const chatSchema = new mongoose.Schema(
+const doctorAIChatSchema = new mongoose.Schema(
   {
-    patient: {
+    doctor: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Patient",
+      ref: "Doctor",
       required: true,
     },
     role: {
       type: String,
-      enum: ["patient", "ai"], // who sent the message
+      enum: ["doctor", "ai"],
       required: true,
     },
     message: {
@@ -18,11 +17,11 @@ const chatSchema = new mongoose.Schema(
       required: true,
     },
     sources: {
-      type: [String], // optional, if AI gives sources
+      type: [String],
       default: [],
-    },
+    }
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Chat", chatSchema);
+module.exports = mongoose.model("DoctorAIChat", doctorAIChatSchema);

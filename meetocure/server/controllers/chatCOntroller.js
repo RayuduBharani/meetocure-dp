@@ -1,17 +1,21 @@
 // controllers/chatController.js
 const axios = require("axios");
-const Chat = require("../models/Chat");
+const PatientChat = require("../models/PatientChat");
+const DoctorAIChat = require("../models/DoctorChat");
 const Patient = require("../models/Patient");
-const FormData = require('form-data');
+const Doctor = require("../models/DoctorShema");
+const FormData = require("form-data");
 
 const chatWithVoice = async (req, res) => {
   try {
     const { patientId } = req.body;
     const audioFile = req.file;
-    console.log("Received voice " , { patientId, audioFile });
+    console.log("Received voice ", { patientId, audioFile });
 
     if (!patientId || !audioFile) {
-      return res.status(400).json({ message: "patientId and audio file are required" });
+      return res
+        .status(400)
+        .json({ message: "patientId and audio file are required" });
     }
 
     // verify patient exists
@@ -41,14 +45,14 @@ const chatWithVoice = async (req, res) => {
     const { transcription, answer, lang_detected } = response.data;
 
     // Save transcription as patient message
-    await Chat.create({
+    await PatientChat.create({
       patient: patient._id,
       role: "patient",
       message: `🎤 Voice: ${transcription}`,
     });
 
     // Save AI response
-    await Chat.create({
+    await PatientChat.create({
       patient: patient._id,
       role: "ai",
       message: answer,
@@ -61,7 +65,10 @@ const chatWithVoice = async (req, res) => {
       success: true,
     });
   } catch (error) {
-    console.error("Error processing voice chat:", error?.response?.data || error.message || error);
+    console.error(
+      "Error processing voice chat:",
+      error?.response?.data || error.message || error
+    );
     return res.status(500).json({
       message: "Voice processing error",
       error: error?.response?.data || error?.message || String(error),
@@ -69,13 +76,14 @@ const chatWithVoice = async (req, res) => {
   }
 };
 
-
 const chatWithFlaskAI = async (req, res) => {
   try {
     const { patientId, message } = req.body;
 
     if (!patientId || !message) {
-      return res.status(400).json({ message: "patientId and message are required" });
+      return res
+        .status(400)
+        .json({ message: "patientId and message are required" });
     }
 
     // verify patient exists
@@ -85,7 +93,7 @@ const chatWithFlaskAI = async (req, res) => {
     }
 
     // save patient message
-    await Chat.create({
+    await PatientChat.create({
       patient: patient._id,
       role: "patient",
       message,
@@ -95,7 +103,7 @@ const chatWithFlaskAI = async (req, res) => {
     const flaskBase = process.env.CHATBOT_URL; // update if needed
     const flaskResponse = await axios.post(
       `${flaskBase}/assistance`,
-      { text: message }   // must match FastAPI schema
+      { text: message } // must match FastAPI schema
     );
 
     // accept either 'reply' (FastAPI) or 'answer' (older expectation)
@@ -104,7 +112,7 @@ const chatWithFlaskAI = async (req, res) => {
     const sources = data.sources || [];
 
     // save AI response
-    await Chat.create({
+    await PatientChat.create({
       patient: patient._id,
       role: "ai",
       message: aiMessage,
@@ -116,9 +124,11 @@ const chatWithFlaskAI = async (req, res) => {
       success: true,
       sources,
     });
-
   } catch (error) {
-    console.error("Error communicating with Flask chatbot:", error?.message || error);
+    console.error(
+      "Error communicating with Flask chatbot:",
+      error?.message || error
+    );
     return res.status(500).json({
       message: "Flask AI service error",
       error: error?.message || String(error),
@@ -139,13 +149,91 @@ const deleteChatsForPatient = async (req, res) => {
     }
 
     // delete all chat documents for this patient
-    await Chat.deleteMany({ patient: patient._id });
+    await PatientChat.deleteMany({ patient: patient._id });
 
-    return res.status(200).json({ success: true, message: "All chats deleted for patient" });
+    return res
+      .status(200)
+      .json({ success: true, message: "All chats deleted for patient" });
   } catch (error) {
     console.error("Error deleting chats:", error?.message || error);
-    return res.status(500).json({ success: false, message: "Server error", error: error?.message || String(error) });
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message: "Server error",
+        error: error?.message || String(error),
+      });
   }
 };
 
-module.exports = { chatWithFlaskAI, deleteChatsForPatient, chatWithVoice };
+const doctorChatWithAI = async (req, res) => {
+  try {
+    const { message, doctorId } = req.body;
+
+    if (!message || !doctorId) {
+      return res
+        .status(400)
+        .json({ message: "Message and doctorId are required" });
+    }
+    // Save doctor's message
+    await DoctorAIChat.create({
+      doctor: doctorId,
+      role: "doctor",
+      message,
+    });
+   
+    // Get AI response from Flask server
+    const flaskBase = process.env.CHATBOT_URL;
+    const flaskResponse = await axios.post(
+      `${flaskBase}/assistance`,
+      { text: message } // must match FastAPI schema
+    );
+    const data = flaskResponse.data || {};
+    const aiMessage = data.reply || data.answer || "No response from AI.";
+    const sources = data.sources || [];
+    console.log("Flask response:", flaskResponse.data.reply);
+    // Save AI's response
+    const aiResponse = await DoctorAIChat.create({
+      doctor: doctorId,
+      role: "ai",
+      message:aiMessage,
+      sources,
+    });
+
+    res.json(aiResponse);
+  } catch (error) {
+    console.error("Doctor AI chat error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getDoctorAIChats = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    const chats = await DoctorAIChat.find({ doctor: doctorId }).sort({
+      createdAt: 1,
+    });
+    res.json(chats);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const deleteDoctorAIChats = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    await DoctorAIChat.deleteMany({ doctor: doctorId });
+    res.json({ message: "Chat history cleared" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  chatWithFlaskAI,
+  deleteChatsForPatient,
+  chatWithVoice,
+  doctorChatWithAI,
+  getDoctorAIChats,
+  deleteDoctorAIChats,
+};
