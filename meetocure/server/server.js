@@ -36,7 +36,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // API routes
-app.use("/api/auth/patient", PatientAuth);
+app.use("/api/auth/patient", PatientAuth); 
 app.use("/api/auth/doctor", doctorAuthRoutes);
 app.use("/api/doctor", doctorVerifyRoutes);
 app.use("/api/doctor", require("./routes/doctorRoutes"));
