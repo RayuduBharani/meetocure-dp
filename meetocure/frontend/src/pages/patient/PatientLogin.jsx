@@ -34,7 +34,8 @@ const PatientLogin = () => {
         `${import.meta.env.VITE_BACKEND_URL}/api/auth/patient/send-otp`,
         { phone }
       );
-
+      
+      
       toast.success("OTP Sent!", { id: "otp" });
 
       setOtpSent(true);
@@ -98,6 +99,7 @@ const PatientLogin = () => {
             localStorage.setItem(`chat_history_${pid}`, JSON.stringify([conv]));
           } catch (e) {
             // ignore localStorage errors
+            console.error("Error seeding initial conversation:", e);
           }
         }
       }

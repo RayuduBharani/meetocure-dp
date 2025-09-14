@@ -16,7 +16,7 @@ const App = () => {
       const doctor = stored ? JSON.parse(stored) : null;
       const token = localStorage.getItem('doctorToken');
       if (token && doctor && doctor.registrationStatus) {
-        console.log(doctor , token , doctor.registrationStatus)
+     
         if (doctor.registrationStatus === 'verified') {
           navigate('/doctor-dashboard');
         } 

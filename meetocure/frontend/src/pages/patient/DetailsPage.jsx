@@ -19,7 +19,6 @@ const DetailsPage = () => {
         setLoading(true);
         const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/doctor/${id}`);
         setDoctor(res.data);
-        console.log("Fetched doctor data:", res.data);
         setError(null);
       } catch (err) {
         console.error("Error fetching doctor:", err);
@@ -136,7 +135,7 @@ const DetailsPage = () => {
             </div>
             <div className="flex items-center gap-3">
               <FaMapMarkerAlt className="text-cyan-800 w-4 h-4" />
-              <span>{doctor.location ? `${doctor.location.city}, ${doctor.location.state}` : "N/A"}</span>
+              <span>{doctor.location ? `${doctor.location.city}` : "N/A"}</span>
             </div>
           </div>
         </div>
@@ -146,7 +145,9 @@ const DetailsPage = () => {
       <div className="fixed bottom-0 left-0 right-0 bg-gray-700 text-white p-4 flex justify-between items-center">
         <div>
           <div className="text-sm text-gray-300">Consultation Fee</div>
-          <div className="text-xl font-bold">₹ 250</div>
+          <div className="text-xl font-bold">
+            <span>{doctor.consultationFee || "Not mentioned"}</span>
+          </div>
         </div>
         <button
           onClick={() => navigate(`/patient/appointments/datetime?doctorId=${doctor.doctorId}`)}

@@ -35,6 +35,7 @@ const EditProfile = () => {
         });
 
         const data = res.data || {};
+       
         setForm((prev) => ({
           ...prev,
           fullName: data.fullName || "",
@@ -73,16 +74,7 @@ const EditProfile = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const onImagePick = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      updateField("profileImage", reader.result);
-    };
-    reader.readAsDataURL(file);
-  };
+
 
   const addListItem = (listName, emptyItem) => {
     setForm((prev) => ({ ...prev, [listName]: [...(prev[listName] || []), emptyItem] }));
@@ -125,8 +117,9 @@ const EditProfile = () => {
 
       // Add profile image if it exists and is changed
       if (form.profileImage && form.profileImage.startsWith('data:image')) {
-        payload.profileImage = form.profileImage;
+        payload.profileImage = form.profileImage.data;
       }
+
 
       try {
         await toast.promise(
@@ -145,7 +138,7 @@ const EditProfile = () => {
 
         navigate("/doctor/profile");
       } catch (err) {
-        console.error("Error details:", err.response?.data);
+       
         const errorMessage = err.response?.data?.message || "Failed to update profile";
         toast.error(errorMessage);
       }
@@ -183,15 +176,7 @@ const EditProfile = () => {
                 alt="Profile" 
                 className="w-full h-full object-cover rounded-full border-4 border-white shadow-inner" 
               />
-              <label className="absolute -bottom-2 -right-2 bg-[#0A4D68] p-2 rounded-full cursor-pointer shadow-md">
-                <FaPencilAlt className="text-white text-sm" />
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={onImagePick} 
-                  className="hidden" 
-                />
-              </label>
+              
             </div>
           </div>
         </section>

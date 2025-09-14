@@ -180,7 +180,7 @@ const getPatientAppointments = async (req, res) => {
       select: "fullName" 
     }
   })
-  console.log(appointments);
+
     // Map to minimal shape required by frontend
     const minimal = appointments.map((a) => ({
       _id: a._id,
@@ -236,12 +236,7 @@ const cancelAppointment = async (req, res) => {
       });
     }
 
-    console.log('Cancel appointment request:', {
-      appointmentId,
-      doctorId,
-      userObject: req.user,
-      userRole: req.user.role
-    });
+ 
 
     // Find the appointment
     const appointment = await Appointment.findById(appointmentId);
@@ -255,14 +250,7 @@ const cancelAppointment = async (req, res) => {
     // Handle both ObjectId and string comparisons
     const appointmentDoctorId = appointment.doctor.toString();
     const currentDoctorId = doctorId.toString();
-    
-    console.log('Authorization check:', {
-      appointmentDoctorId,
-      currentDoctorId,
-      match: appointmentDoctorId === currentDoctorId,
-      appointmentDoctorType: typeof appointment.doctor,
-      doctorIdType: typeof doctorId
-    });
+ 
     
     if (appointmentDoctorId !== currentDoctorId) {
       console.log('Authorization failed:', {

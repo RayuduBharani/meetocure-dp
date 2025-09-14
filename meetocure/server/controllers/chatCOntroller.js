@@ -10,7 +10,6 @@ const chatWithVoice = async (req, res) => {
   try {
     const { patientId } = req.body;
     const audioFile = req.file;
-    console.log("Received voice ", { patientId, audioFile });
 
     if (!patientId || !audioFile) {
       return res
@@ -191,7 +190,6 @@ const doctorChatWithAI = async (req, res) => {
     const data = flaskResponse.data || {};
     const aiMessage = data.reply || data.answer || "No response from AI.";
     const sources = data.sources || [];
-    console.log("Flask response:", flaskResponse.data.reply);
     // Save AI's response
     const aiResponse = await DoctorAIChat.create({
       doctor: doctorId,

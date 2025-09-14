@@ -7,7 +7,6 @@ import PatientTopIcons from "../../components/PatientTopIcons";
 
 const DetailPage = () => {
   const { id } = useParams(); // doctorId from URL
-  console.log("Doctor ID from URL:", id);
   const navigate = useNavigate();
   const [doctor, setDoctor] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -20,7 +19,6 @@ const DetailPage = () => {
 
         const data = await res.json();
         setDoctor(data);
-        console.log("Fetched doctor data:", data);
       } catch (error) {
         console.error("Error fetching doctor:", error);
       } finally {

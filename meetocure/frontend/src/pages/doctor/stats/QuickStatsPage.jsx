@@ -40,7 +40,7 @@ const QuickStatsPage = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedPeriod, setSelectedPeriod] = useState('monthly');
+  // const [selectedPeriod, setSelectedPeriod] = useState('monthly');
   const [activeTab, setActiveTab] = useState('overview');
   const navigate = useNavigate();
 
@@ -177,13 +177,13 @@ const QuickStatsPage = () => {
   ];
 
   // Period filter options
-  const periodOptions = [
-    { value: 'today', label: 'Today' },
-    { value: 'weekly', label: 'This Week' },
-    { value: 'monthly', label: 'This Month' },
-    { value: 'yearly', label: 'This Year' },
-    { value: 'all', label: 'All Time' }
-  ];
+  // const periodOptions = [
+  //   { value: 'today', label: 'Today' },
+  //   { value: 'weekly', label: 'This Week' },
+  //   { value: 'monthly', label: 'This Month' },
+  //   { value: 'yearly', label: 'This Year' },
+  //   { value: 'all', label: 'All Time' }
+  // ];
 
   // Tab options
   const tabs = [

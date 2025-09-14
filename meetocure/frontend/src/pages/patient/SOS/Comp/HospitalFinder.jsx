@@ -13,7 +13,8 @@ const HospitalFinder = () => {
           const { latitude, longitude } = pos.coords;
           findNearbyHospitals(latitude, longitude);
         });
-      } catch (error) {
+      } catch (e) {
+        console.error(e);
         setError("Failed to load Google Maps API");
       }
     };
@@ -41,7 +42,7 @@ const HospitalFinder = () => {
           setError(null);
         } else {
           if (radius < 10000) {
-            console.log(`No hospitals in ${radius}m. Retrying...`);
+         
             findNearbyHospitals(lat, lng, radius + 3000);
           } else {
             setError("🚨 No hospitals found within 10 km. Please call 108 for emergency services.");

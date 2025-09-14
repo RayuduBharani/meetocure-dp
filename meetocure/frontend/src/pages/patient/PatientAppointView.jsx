@@ -19,7 +19,6 @@ export default function PatientAppointView() {
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
   ];
-console.log(nextAppointment);
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   useEffect(() => {
@@ -80,7 +79,6 @@ console.log(nextAppointment);
           throw new Error(txt || `HTTP ${res.status}`);
         }
         const data = await res.json();
-        console.log("Fetched appointments:", data);
         const itemsRaw = Array.isArray(data.appointments) ? data.appointments : [];
         const items = itemsRaw.map(normalizeAppointment);
 

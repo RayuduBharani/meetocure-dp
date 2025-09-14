@@ -262,14 +262,14 @@ const Chatpage2 = ({ patientId, activeConversation, onSaveConversation }) => {
 				const url = URL.createObjectURL(blob);
 				
 				// Log voice recording details
-				console.log('Voice Recording Details:', {
-					timestamp: new Date().toISOString(),
-					duration: recordingDuration,
-					blobSize: blob.size,
-					blobType: blob.type,
-					chunks: chunksRef.current.length,
-					url: url
-				});
+				// console.log('Voice Recording Details:', {
+				// 	timestamp: new Date().toISOString(),
+				// 	duration: recordingDuration,
+				// 	blobSize: blob.size,
+				// 	blobType: blob.type,
+				// 	chunks: chunksRef.current.length,
+				// 	url: url
+				// });
 
 				// Add voice message to chat
 				const userMessage = {
@@ -303,7 +303,7 @@ const Chatpage2 = ({ patientId, activeConversation, onSaveConversation }) => {
 							withCredentials: true
 						}
 					);
-					console.log(response.data);
+				
 
 					// Add AI response to chat
 					const aiResponse = {

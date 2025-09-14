@@ -12,7 +12,7 @@ const MissionCard = ({ mission, onClick }) => {
 
   const handleCompleteClick = (e) => {
     e.stopPropagation(); // Prevent card's onClick from firing
-    console.log(`Completing mission ${mission.id}`);
+    // console.log(`Completing mission ${mission.id}`);
     success('Mission completed! Points added to your wallet');
   };
 

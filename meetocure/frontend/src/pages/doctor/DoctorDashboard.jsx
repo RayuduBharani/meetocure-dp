@@ -55,7 +55,6 @@ const DoctorDashboard = () => {
     const doctorInfo = localStorage.getItem('doctorInfo');
     
     if (!token || !doctorInfo) {
-      console.log('No authentication found, redirecting to login');
       navigate('/doctor-verify');
       return;
     }
@@ -64,7 +63,6 @@ const DoctorDashboard = () => {
     try {
       const doctor = JSON.parse(doctorInfo);
       if (doctor.registrationStatus !== 'verified') {
-        console.log('Doctor not verified, redirecting to verification');
         if (doctor.registrationStatus === 'under review by hospital') {
           navigate('/doctor-verify');
         } else {

@@ -27,7 +27,6 @@ const DoctorAvailability = () => {
         }
 
         const base = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
-        console.log("Fetching availability from:", `${base}/api/availability/${doctorId}`);
         const res = await axios.get(
           `${base}/api/availability/${doctorId}`,
           {

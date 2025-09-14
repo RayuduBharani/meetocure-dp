@@ -61,10 +61,9 @@ await Slot.insertMany(slotDocs);
 };
 
 const getAvailability = async (req, res) => {
-  console.log("testing the get avilability");
   try {
     const doctorId = req.params.doctorId;
-    console.log(doctorId);
+
 
     const availability = await Availability.findOne({ doctor: doctorId });
 
@@ -79,7 +78,6 @@ const getAvailability = async (req, res) => {
 };
 
 const deleteAvailabilityDate = async (req, res) => {
-  console.log("testing delete availability date");
   const doctorId = req.user.doctorId;
   const { date } = req.params;
 

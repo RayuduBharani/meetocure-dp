@@ -122,20 +122,20 @@ const HospitalDoctorsPage = () => {
     const [hospitalDoctors, setHospitalDoctors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedCategory, setSelectedCategory] = useState('All');
-    const [filteredHospitals, setFilteredHospitals] = useState([]);
+    // const [selectedCategory, setSelectedCategory] = useState('All');
+    // const [filteredHospitals, setFilteredHospitals] = useState([]);
 
     // Category mapping for filtering - same as PatientDashboard
-    const categoryMapping = {
-        'dentistry': ['Dentist', 'Dental', 'Dentistry'],
-        'cardiology': ['Cardiologist', 'Cardiology'],
-        'pulmonary': ['Pulmonologist', 'Pulmonary', 'Lungs'],
-        'general': ['General', 'General Physician', 'Family Medicine', 'General Medicine'],
-        'neurology': ['Neurologist', 'Neurology'],
-        'gastroen': ['Gastroenterologist', 'Gastroenterology', 'Gastro'],
-        'laboratory': ['Laboratory', 'Lab', 'Pathology'],
-        'vaccination': ['Vaccination', 'Immunization', 'Vaccine']
-    };
+    // const categoryMapping = {
+    //     'dentistry': ['Dentist', 'Dental', 'Dentistry'],
+    //     'cardiology': ['Cardiologist', 'Cardiology'],
+    //     'pulmonary': ['Pulmonologist', 'Pulmonary', 'Lungs'],
+    //     'general': ['General', 'General Physician', 'Family Medicine', 'General Medicine'],
+    //     'neurology': ['Neurologist', 'Neurology'],
+    //     'gastroen': ['Gastroenterologist', 'Gastroenterology', 'Gastro'],
+    //     'laboratory': ['Laboratory', 'Lab', 'Pathology'],
+    //     'vaccination': ['Vaccination', 'Immunization', 'Vaccine']
+    // };
 
     // Hospital categories - same structure as PatientDashboard
 
@@ -144,8 +144,7 @@ const HospitalDoctorsPage = () => {
         try {
             // Find the hospital data
             const foundHospital = allHospitalsData.find(h => h.id === hospitalId);
-            console.log('Hospital ID from params:', hospitalId);
-            console.log('Found hospital:', foundHospital);
+
 
             if (foundHospital) {
                 setHospital(foundHospital);
@@ -155,15 +154,12 @@ const HospitalDoctorsPage = () => {
                     const doctors = allDoctorsData.filter(doctor =>
                         foundHospital.doctors.includes(doctor.id)
                     );
-                    console.log('Hospital doctors array:', foundHospital.doctors);
-                    console.log('Filtered doctors:', doctors);
+            
                     setHospitalDoctors(doctors);
                 } else {
-                    console.log('No doctors assigned to this hospital');
                     setHospitalDoctors([]);
                 }
             } else {
-                console.log('Hospital not found for ID:', hospitalId);
                 setError('Hospital not found');
             }
         } catch (err) {
@@ -174,23 +170,23 @@ const HospitalDoctorsPage = () => {
         }
     }, [hospitalId]);
 
-    const handleHospitalCardClick = (hospital) => {
-        navigate(`/hospital/${hospital.id}/doctors`);
-    };
+    // const handleHospitalCardClick = (hospital) => {
+    //     navigate(`/hospital/${hospital.id}/doctors`);
+    // };
 
-    const getCategoryTitle = (category) => {
-        const titles = {
-            'dentistry': 'Dentistry',
-            'cardiology': 'Cardiology',
-            'pulmonary': 'Pulmonary',
-            'general': 'General Medicine',
-            'neurology': 'Neurology',
-            'gastroen': 'Gastroenterology',
-            'laboratory': 'Laboratory',
-            'vaccination': 'Vaccination',
-        };
-        return titles[category.toLowerCase()] || category;
-    };
+    // const getCategoryTitle = (category) => {
+    //     const titles = {
+    //         'dentistry': 'Dentistry',
+    //         'cardiology': 'Cardiology',
+    //         'pulmonary': 'Pulmonary',
+    //         'general': 'General Medicine',
+    //         'neurology': 'Neurology',
+    //         'gastroen': 'Gastroenterology',
+    //         'laboratory': 'Laboratory',
+    //         'vaccination': 'Vaccination',
+    //     };
+    //     return titles[category.toLowerCase()] || category;
+    // };
 
     if (loading) {
         return (

@@ -44,7 +44,6 @@ const UpcomingAppointments = () => {
           }
         } else {
           const data = await response.json();
-          console.log("Fetched appointments:", data);
 
           // ✅ Handle both {appointments: [...]} and plain array
           if (data.appointments && Array.isArray(data.appointments)) {
@@ -144,7 +143,7 @@ const UpcomingAppointments = () => {
       );
 
       const data = await response.json();
-      console.log("Accept response:", { status: response.status, data });
+    
 
       if (response.ok && data.success) {
         setAppointments((prevAppointments) =>

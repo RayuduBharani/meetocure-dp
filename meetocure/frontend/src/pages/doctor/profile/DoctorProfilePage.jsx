@@ -112,15 +112,7 @@ const DoctorProfilePage = () => {
             alt="Profile"
             className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md"
           />
-          <label className="absolute bottom-2 right-2 bg-[#0A4D68] p-1.5 rounded-full cursor-pointer">
-            <FaEdit className="text-white text-sm" />
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="hidden"
-            />
-          </label>
+          
         </div>
         <h2 className="text-xl font-semibold text-[#0A4D68] mb-1">
           {doctorInfo?.fullName || "Loading..."}

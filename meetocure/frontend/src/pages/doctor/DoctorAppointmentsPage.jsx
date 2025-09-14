@@ -34,7 +34,6 @@ const DoctorAppointmentsPage = () => {
           }
         );
         
-        console.log("Raw API Response:", res.data);
         
         const enrichedAppointments = (res.data.appointments || []).map((appt) => ({
           ...appt,
@@ -46,7 +45,6 @@ const DoctorAppointmentsPage = () => {
           reason: appt.reason || "Not specified"
         }));
 
-        console.log("Enriched Appointments:", enrichedAppointments);
 
         setAppointments(enrichedAppointments);
       } catch (err) {

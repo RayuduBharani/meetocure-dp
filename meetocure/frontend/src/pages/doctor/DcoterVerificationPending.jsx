@@ -37,7 +37,6 @@ export default function DoctorVerificationPending() {
         const data = await res.json();
         if (!isMounted) return;
         const newStatus = data?.registrationStatus || data?.doctor?.registrationStatus || 'under review by hospital';
-        console.log('Verification status:', newStatus);
         setStatus(newStatus);
         setServerInfo({
           doctorId: data?.doctorId || data?.doctor?._id || doctorId,

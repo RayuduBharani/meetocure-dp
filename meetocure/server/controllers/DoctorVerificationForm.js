@@ -107,7 +107,6 @@ const verifyDoctor = async (req, res) => {
         // identityDocument (Aadhaar image)
         if (req.files.identityDocument && req.files.identityDocument[0]) {
           const file = req.files.identityDocument[0];
-          console.log('Uploading identity document:', { size: file.size, mimetype: file.mimetype });
           const url = await cloudinaryUpload(file.buffer, 'doctor_verifications', `identity_${doctorId}`);
           data.identityDocument = url;
         }
@@ -176,11 +175,9 @@ const verifyDoctor = async (req, res) => {
           // Check if the existing verification belongs to a doctor that no longer exists
           const existingDoctor = await Doctor.findById(existingDoctorId);
           if (!existingDoctor) {
-            console.log("Existing doctor not found - allowing update");
             // Delete the orphaned verification
             await DoctorVerification.findByIdAndDelete(existing._id);
           } else {
-            console.log("Different active doctor - blocking");
             return res.status(400).json({ 
               message: "This medical council registration number is already used by another doctor" 
             });
@@ -214,7 +211,6 @@ const verifyDoctor = async (req, res) => {
       verificationData.bankingInfo = [bankingInfo];
     }
 
-    console.log("Final verification data:", verificationData);
 
     let verification;
     if (existingVerification) {

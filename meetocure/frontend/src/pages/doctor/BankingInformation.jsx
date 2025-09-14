@@ -93,8 +93,7 @@ const BankingInformation = () => {
       }
       
       // Debug logging (remove in production)
-      console.log('Extracted doctorId:', doctorId);
-      console.log('Doctor data being sent:', doctorData);
+ 
       
       if (!doctorId) {
         throw new Error('Doctor ID not found. Please login again.');
@@ -143,21 +142,19 @@ const BankingInformation = () => {
       });
 
       // Append doctor files
-      console.log('actualFiles structure:', actualFiles);
-      console.log('qualificationCertificates:', actualFiles.qualificationCertificates);
+
       
       actualFiles.profileImage && formDataToSend.append('profileImage', actualFiles.profileImage);
       actualFiles.identityDocument && formDataToSend.append('identityDocument', actualFiles.identityDocument);
       actualFiles.medicalCouncilCertificate && formDataToSend.append('medicalCouncilCertificate', actualFiles.medicalCouncilCertificate);
       
       if (actualFiles.qualificationCertificates && actualFiles.qualificationCertificates.length > 0) {
-        console.log('Adding qualification certificates:', actualFiles.qualificationCertificates.length);
         actualFiles.qualificationCertificates.forEach((file, index) => {
           console.log(`Adding qualification certificate ${index}:`, file);
           formDataToSend.append('qualificationCertificates', file);
         });
       } else {
-        console.log('No qualification certificates found!');
+     
         console.log('actualFiles.qualificationCertificates:', actualFiles.qualificationCertificates);
       }
 
@@ -179,11 +176,9 @@ const BankingInformation = () => {
         // Store token and user data if provided
         if (data.token) {
           localStorage.setItem("doctorToken", data.token);
-          console.log('Doctor token stored:', data.token);
         }
         if (data.doctor) {
           localStorage.setItem("doctorInfo", JSON.stringify(data.doctor));
-          console.log('Doctor info stored:', data.doctor);
         }
         
         // Clear form data from localStorage

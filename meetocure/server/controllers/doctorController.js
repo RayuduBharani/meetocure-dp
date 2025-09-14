@@ -366,7 +366,6 @@ const updateDoctorProfile = async (req, res) => {
     const userDoc = await DoctorVerification.findOne({ _id: doctorId });
     
     if (!userDoc) {
-      console.log("No user found for this doctorId");
       return res.status(404).json({
         message: "Doctor not found in user records",
         doctorId: doctorId
@@ -453,12 +452,10 @@ const updateDoctorProfile = async (req, res) => {
     delete updatePayload.isProfileComplete;
 
     // Now update the DoctorVerification document    
-    console.log("Updating doctorId:", doctorId);
     const existingDoctor = await DoctorVerification.findOne({_id: doctorId });
     // console.log("existingDoctor:", existingDoctor);
     
     if (!existingDoctor) {
-      console.log("No doctor verification found for doctorId:", doctorId);
       // Let's check what documents exist in the collection
       const allDocs = await DoctorVerification.find({}).select('doctorId _id');
       
@@ -476,7 +473,6 @@ const updateDoctorProfile = async (req, res) => {
     );
 
     if (!updated) {
-      console.log("Update failed for doctorId:", doctorId);
       return res.status(404).json({ message: "Failed to update profile" });
     }
 
