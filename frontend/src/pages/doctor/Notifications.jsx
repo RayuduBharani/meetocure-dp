@@ -17,7 +17,8 @@ const formatRelative = (isoStr) => {
     if (hrs < 24) return `${hrs}h ago`;
     const days = Math.floor(hrs / 24);
     return days === 1 ? "1 day ago" : `${days} days ago`;
-  } catch (_) {
+  } catch (err) {
+    console.log(err)
     return "";
   }
 };
@@ -70,6 +71,7 @@ const Notifications = () => {
       setItems((prev) => prev.map((n) => ({ ...n, read: true })));
       toast.success("All notifications marked as read");
     } catch (e) {
+      console.log(e)
       toast.error("Failed to mark all as read");
     }
   };
@@ -86,7 +88,9 @@ const Notifications = () => {
       setItems((prev) =>
         prev.map((x) => (x._id === n._id ? { ...x, read: true } : x))
       );
-    } catch (_) { }
+    } catch (err) {
+      console.log(err)
+    }
 
     const fallback = localStorage.getItem("doctorToken")
       ? "/doctor/appointments"

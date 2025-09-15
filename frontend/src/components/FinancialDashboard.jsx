@@ -19,8 +19,7 @@ import {
 
 const FinancialDashboard = ({ 
   financialData = {},
-  onExport = () => {},
-  onFilter = () => {}
+  onExport = () => {}
 }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('monthly');
   const [selectedView, setSelectedView] = useState('overview');

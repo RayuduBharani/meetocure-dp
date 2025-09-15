@@ -5,13 +5,9 @@ import {
   FaQuestionCircle,
   FaPhone,
   FaEnvelope,
-  FaComments,
-  FaSearch,
   FaChevronDown,
   FaChevronUp,
   FaWhatsapp,
-  FaClock,
-  FaMapMarkerAlt,
 } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import TopIcons from "../../../components/PatientTopIcons";

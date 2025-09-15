@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, User, Calendar, MapPin, Phone, GraduationCap, Building, CreditCard, FileText, Award, Shield, Clock, Stethoscope } from "lucide-react";
+import { ArrowLeft, User, MapPin, Phone, GraduationCap, Building, CreditCard, FileText, Award, Shield, Clock, Stethoscope } from "lucide-react";
 import { API_BASE_URL } from "../../../lib/config";
 import { useNavigate } from "react-router-dom";
 

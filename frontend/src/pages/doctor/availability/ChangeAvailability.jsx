@@ -5,7 +5,6 @@ import BottomNav from "../../../components/BottomNav";
 import TopIcons from "../../../components/TopIcons";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { API_BASE_URL } from "../../../lib/config";
 
 const timeSlots = [
   "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
@@ -38,7 +37,7 @@ const handleConfirm = async () => {
     const loadingToast = toast.loading("Updating availability...");
 
     // Use PUT to update specific date (date comes from route param)
-    const base = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+    const base = import.meta.env.VITE_BACKEND_URL || "http://65.2.176.202:5000";
     await axios.put(
       `${base}/api/availability/${encodeURIComponent(date)}`,
       { slots: selectedSlots },

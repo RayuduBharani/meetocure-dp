@@ -26,7 +26,7 @@ const DoctorAvailability = () => {
           return;
         }
 
-        const base = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+        const base = import.meta.env.VITE_BACKEND_URL || "http://65.2.176.202:5000";
         const res = await axios.get(
           `${base}/api/availability/${doctorId}`,
           {

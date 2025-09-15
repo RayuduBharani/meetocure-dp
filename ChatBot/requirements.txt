@@ -1,0 +1,14 @@
+SpeechRecognition
+pydub
+fastapi
+uvicorn[standard]
+langchain>=0.0.300
+langchain-community
+langchain-huggingface
+langchain-together
+langchain-core
+python-dotenv
+PyMuPDF
+chromadb
+langdetect
+gTTS

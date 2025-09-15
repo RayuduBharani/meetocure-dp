@@ -5,11 +5,9 @@ import ConfirmationModal from "./ConfirmationModal";
 const AppointmentActionModal = ({
     isOpen,
     onClose,
-    action, // 'book', 'cancel', 'reschedule'
-    appointmentData,
+    action,
     onConfirm,
     doctorName,
-    patientName,
     date,
     time
 }) => {
@@ -76,6 +74,7 @@ const AppointmentActionModal = ({
                 onClose();
             }, 1500);
         } catch (err) {
+            console.log(err)
             dismissLoading(loadingKey);
             error(`Failed to ${action} appointment`);
         }

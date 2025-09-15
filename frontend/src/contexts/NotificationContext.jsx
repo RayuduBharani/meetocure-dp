@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 
 const NotificationContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {
@@ -78,6 +79,7 @@ export const NotificationProvider = ({ children }) => {
 
   // ✅ Confirmation toast (Yes/No buttons)
   const confirm = useCallback((message, onConfirm, onCancel) => {
+    // eslint-disable-next-line no-unused-vars
     const id = toast.custom((t) => (
       <div className="bg-white shadow-lg rounded-xl p-4 flex flex-col items-center gap-3 border">
         <p className="text-gray-800 font-medium">{message}</p>

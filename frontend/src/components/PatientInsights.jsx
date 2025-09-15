@@ -9,18 +9,13 @@ const PatientInsights = ({
   const {
     totalPatients = 0,
     newPatients = 0,
-    returningPatients = 0,
     ageGroups = {},
     genderDistribution = {},
     topConditions = []
   } = patientData;
 
   const {
-    totalAppointments = 0,
-    completedAppointments = 0,
-    cancelledAppointments = 0,
     averageSessionDuration = 0,
-    peakHours = [],
     appointmentTypes = {}
   } = appointmentData;
 

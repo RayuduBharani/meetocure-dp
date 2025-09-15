@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
 import TopIcons from "../../../components/TopIcons";
 import axios from "axios";
-import { API_BASE_URL } from "../../../lib/config";
 import toast, { Toaster } from "react-hot-toast";
 
 const AddAvailability = () => {
@@ -39,7 +38,7 @@ const AddAvailability = () => {
     
     try {
       const token = localStorage.getItem("doctorToken");
-      const base = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+      const base = import.meta.env.VITE_BACKEND_URL || "http://65.2.176.202:5000";
       await axios.post(
         `${base}/api/availability`,
         {

@@ -39,6 +39,7 @@ doctorApi.interceptors.response.use(
 
 // Doctor API functions
 export const getDoctorStats = async () => {
+  // eslint-disable-next-line no-useless-catch
   try {
     const response = await doctorApi.get('/stats');
     return response.data;

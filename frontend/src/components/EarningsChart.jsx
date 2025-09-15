@@ -3,8 +3,7 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 
 const EarningsChart = ({ 
   title = "Earnings Trend", 
-  data = [], 
-  type = "line", // line, bar, area
+  data = [],
   height = 200 
 }) => {
   // Sample data for demonstration

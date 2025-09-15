@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaPencilAlt, FaPlus, FaTrash } from "react-icons/fa";
+import { FaArrowLeft, FaPlus, FaTrash } from "react-icons/fa";
 import TopIcons from "../../../components/TopIcons";
 import axios from "axios";
 import toast from "react-hot-toast";

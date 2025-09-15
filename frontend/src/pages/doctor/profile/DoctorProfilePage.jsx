@@ -41,6 +41,7 @@ const DoctorProfilePage = () => {
   );
 
   // Save new image to localStorage
+  // eslint-disable-next-line no-unused-vars
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {

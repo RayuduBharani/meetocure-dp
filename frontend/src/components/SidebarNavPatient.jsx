@@ -37,6 +37,7 @@ const SidebarNavPatient = ({ handleCategoryClick }) => {
   const location = useLocation();
 
   const isBottomNavVisible = window.innerWidth < 768;
+  // eslint-disable-next-line no-unused-vars
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   React.useEffect(() => {
