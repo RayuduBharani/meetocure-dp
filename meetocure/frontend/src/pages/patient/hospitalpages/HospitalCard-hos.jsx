@@ -84,7 +84,7 @@ const HospitalCardList = ({ title = "Nearby Hospitals" }) => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {itemsToShow?.map((hospital) => (
-                    <HospitalCard key={hospital._id} hospital={{ ...hospital, hospitalImage: "/assets/image.png" }} onClick={() => navigate(`/hospital/${hospital._id}`)} />
+                    <HospitalCard key={hospital._id} hospital={{ ...hospital, hospitalImage: hospital.hospitalImage || "/assets/image.png" }} onClick={() => navigate(`/hospital/${hospital._id}`)} />
                 ))}
             </div>
             {visibleCount < hospitals?.length && (
