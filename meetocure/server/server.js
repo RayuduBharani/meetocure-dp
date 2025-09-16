@@ -5,6 +5,7 @@ const connectDB = require("./config/db");
 const PatientAuth = require("./routes/patientAuthRoutes");
 const doctorAuthRoutes = require("./routes/doctorAuthRoute");
 const doctorVerifyRoutes = require("./routes/DoctorVerification");
+const HospitalApi = require("./controllers/hospitalApi")
 const http = require("http");
 const { Server } = require("socket.io");
 dotenv.config();
@@ -49,6 +50,9 @@ app.use("/api/chat", require("./routes/chatRoutes"));
 app.use("/api/search", require("./routes/searchRoutes"));
 app.use("/api/doc&hosp", require("./routes/doc&hospRoutes"));
 app.use("/api/patient/profile", require("./routes/patientProfileRoutes"));
+
+//hospital routes
+app.use('/api1', HospitalApi);
 
 app.get("/", (req, res) => {
   res.send("API is Working");

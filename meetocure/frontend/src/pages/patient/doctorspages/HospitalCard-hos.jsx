@@ -15,6 +15,7 @@ const StarRating = ({ rating }) => {
 };
 
 const HospitalCard = ({ hospital, onToggleFavorite }) => {
+    // eslint-disable-next-line no-unused-vars
     const [isImageLoaded, setIsImageLoaded] = useState(false);
     const navigate = useNavigate();
 
