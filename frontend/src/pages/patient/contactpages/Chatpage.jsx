@@ -65,6 +65,7 @@ const ChatPage = () => {
 
   useEffect(() => {
     if (!patientId) return;
+
     try {
       const raw = localStorage.getItem(`chat_history_${patientId}`);
       setHistories(raw ? JSON.parse(raw) : []);

@@ -12,3 +12,4 @@ PyMuPDF
 chromadb
 langdetect
 gTTS
+sentence-transformers

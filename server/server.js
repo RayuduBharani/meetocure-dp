@@ -55,34 +55,34 @@ app.get("/", (req, res) => {
 });
 
 // --- Socket.IO Setup ---
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    credentials: true,
-  },
-  path: "/socket.io",
-});
+// const server = http.createServer(app);
+// const io = new Server(server, {
+//   cors: {
+//     origin: allowedOrigins.filter(Boolean),
+//     credentials: true,
+//   },
+//   path: "/socket.io",
+// });
 
-app.set("io", io);
+// app.set("io", io);
 
-io.on("connection", (socket) => {
-  console.log("Socket connected:", socket.id);
+// io.on("connection", (socket) => {
+//   console.log("Socket connected:", socket.id);
 
-  socket.on("join", (userId) => {
-    socket.join(userId);
-    console.log(`User ${userId} joined room`);
-  });
+//   socket.on("join", (userId) => {
+//     socket.join(userId);
+//     console.log(`User ${userId} joined room`);
+//   });
 
-  socket.on("leave", (userId) => {
-    socket.leave(userId);
-    console.log(`User ${userId} left room`);
-  });
+//   socket.on("leave", (userId) => {
+//     socket.leave(userId);
+//     console.log(`User ${userId} left room`);
+//   });
 
-  socket.on("disconnect", () => {
-    console.log("Socket disconnected:", socket.id);
-  });
-});
+//   socket.on("disconnect", () => {
+//     console.log("Socket disconnected:", socket.id);
+//   });
+// });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

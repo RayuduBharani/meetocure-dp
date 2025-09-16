@@ -3,6 +3,7 @@
 /server/.env
 /server/.env.local
 ChatBot/.env
+ChatBot/hf_models
 /frontend/node_modules
 /frontend/.env
 ChatBot/.venv
