@@ -1,8 +1,8 @@
 import LinkDoctorsToHospital from "./pages/admin/LinkDoctorsToHospital";
-{/* Admin: Link Doctors to Hospital */ }
-<Route path="/admin/link-doctors-hospital" element={<LinkDoctorsToHospital />} />
-import React from "react";
-import { Routes, Route, Router } from "react-router-dom";
+// {/* Admin: Link Doctors to Hospital */ }
+// <Route path="/admin/link-doctors-hospital" element={<LinkDoctorsToHospital />} />
+import React, {useEffect } from "react";
+import { Routes, Route, Router, useNavigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
 // Common
@@ -67,6 +67,30 @@ import AppointmentProvider from "./contexts/AppointmentContext.jsx";
 import DcoterVerificationPending from "./pages/doctor/DcoterVerificationPending.jsx";
 
 function App() {
+    const navigate=useNavigate();
+
+
+  useEffect(() => {
+    // Request notification permission on component mount 
+    const tokenCheck=localStorage.getItem("token");
+    const patientId=localStorage.getItem("patientId");
+    if(tokenCheck && patientId){
+      navigate("/patient-dashboard");
+    }
+
+
+    if (Notification.permission !== 'granted') {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          console.log('Notification permission granted.');
+        }
+      });
+    }
+  }, []);
+
+
+
+
   return (
     // <AuthProvider>
     <GoogleMapsProvider>

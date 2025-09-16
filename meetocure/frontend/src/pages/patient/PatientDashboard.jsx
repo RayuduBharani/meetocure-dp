@@ -123,6 +123,7 @@ const PatientDashboard = () => {
     const token = localStorage.getItem("token");
     if (!token) {
       console.warn("No auth token found. Cannot fetch protected routes.");
+      navigate("/dual-patient");
       return;
     }
 
@@ -252,7 +253,7 @@ const PatientDashboard = () => {
                       </button>
                     </div>
                     {filteredDoctors.length > 0 && (
-                      <CardList title={`${selectedCategory} Doctors`} data={filteredDoctors} type="doctor" />
+                      <CardList title={`${selectedCategory} Doctors`} data={filteredDoctors}  type="doctor" />
                     )}
                     {filteredHospitals.length > 0 && (
                       <CardList title={`${selectedCategory} Hospitals`} data={filteredHospitals} type="hospital" />
@@ -263,6 +264,7 @@ const PatientDashboard = () => {
                         <p className="text-gray-600">No doctors or hospitals found for {selectedCategory} category.</p>
                       </div>
                     )}
+                    
                   </>
                 ) : (
                   <>
@@ -284,11 +286,8 @@ const PatientDashboard = () => {
               ) : errorDoctors ? (
                 <div className="text-center text-red-500 py-4">{errorDoctors}</div>
               ) : (
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-semibold text-[#0A4D68]">{getCategoryTitle(selectedCategory)}</h2>
-                  <div className="text-sm text-gray-600">
-                    {filteredDoctors.length} doctor{filteredDoctors.length !== 1 ? 's' : ''} • {filteredHospitals.length} hospital{filteredHospitals.length !== 1 ? 's' : ''}
-                  </div>
+                <div className="flex items-center justify-between">
+                 
                 </div>
               )}
 

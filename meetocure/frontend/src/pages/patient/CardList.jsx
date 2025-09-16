@@ -3,11 +3,14 @@ import { Link } from 'react-router-dom';
 import Card from './Card';
 import HospitalCard from './doctorspages/HospitalCard-hos';
 
-// eslint-disable-next-line no-unused-vars
-const CardList = ({ title, data, type, seeAllLink }) => {
+const CardList = ({ title, data = [], type}) => {
     const initialVisibleCount = 4; // Show 4 cards initially for a better look
-    const itemsToShow = data.slice(0, initialVisibleCount);
+    const itemsToShow = Array.isArray(data) ? data.slice(0, initialVisibleCount) : [];
     const [favorites, setFavorites] = useState({});
+
+    // normalize hosData which may be an array or a number
+ 
+    const doctorsCount = Array.isArray(data) ? data.length : (typeof data === 'number' ? data : 0);
 
     const toggleFavorite = (id) => {
         setFavorites(prev => ({
@@ -20,26 +23,25 @@ const CardList = ({ title, data, type, seeAllLink }) => {
         <div className="mb-10">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold text-[#1F2A37]">{title}</h2>
-                <Link
-                    to={type === "doctor" ? "/doctorspages/Cards-data" : "/hospitalpages/Cards-data"}
-                    className="text-sm text-[#0A4D68] hover:underline font-medium"
-                >
-                    See All
-                </Link>
+                <div className="text-sm text-gray-600">
+                    {/* Display totals: doctors • hospitals */}
+                    {doctorsCount} {doctorsCount === 1 ? 'doctor' : 'doctors'} 
+                </div>
             </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {itemsToShow.map((item) => {
                     if (type === "hospital") {
                         return (
                             <HospitalCard
-                                key={item.id}
-                                hospital={{...item, isFavorite: favorites[item.id] || false}}
+                                key={item.id || item._id}
+                                hospital={{...item, isFavorite: favorites[item.id || item._id] || false}}
                                 onToggleFavorite={toggleFavorite}
                             />
                         );
                     } else {
                         return (
-                            <Link to={`/details/${type}/${item.id}`} key={item.id}>
+                            <Link to={`/details/${type}/${item.id}`} key={item.id || item._id}>
                                 <Card
                                     image={item.profileImage}
                                     name={item.fullName}

@@ -4,21 +4,36 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 
+const OTP_VALIDITY_SECONDS = 120; // 2 minutes
+
 const PatientLogin = () => {
   const navigate = useNavigate();
   const [phone, setPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("".padEnd(6, ""));
-  const [timer, setTimer] = useState(60);
+  const [timer, setTimer] = useState(OTP_VALIDITY_SECONDS);
   const [loading, setLoading] = useState(false);
+  const [otpExpiry, setOtpExpiry] = useState(null); // timestamp in ms
   const otpRefs = useRef([]);
+
   useEffect(() => {
     let id;
-    if (otpSent && timer > 0) {
-      id = setInterval(() => setTimer((t) => t - 1), 1000);
+    if (otpSent && otpExpiry) {
+      id = setInterval(() => {
+        const remaining = Math.max(0, Math.ceil((otpExpiry - Date.now()) / 1000));
+        setTimer(remaining);
+        if (remaining <= 0) {
+          // OTP expired: reset OTP UI state
+          clearInterval(id);
+          setOtpSent(false);
+          setOtp("".padEnd(6, ""));
+          setOtpExpiry(null);
+          toast.error("OTP expired. Please request a new code.");
+        }
+      }, 1000);
     }
     return () => clearInterval(id);
-  }, [otpSent, timer]);
+  }, [otpSent, otpExpiry]);
 
   const normalized = (p) => p.replace(/\D/g, "").slice(-10);
 
@@ -29,18 +44,20 @@ const PatientLogin = () => {
       return;
     }
     try {
+      setLoading(true);
       toast.loading("Sending OTP...", { id: "otp" });
       const res = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/auth/patient/send-otp`,
         { phone }
       );
-      
-      
+
       toast.success("OTP Sent!", { id: "otp" });
 
       setOtpSent(true);
       setOtp("".padEnd(6, ""));
-      setTimer(60);
+      setTimer(OTP_VALIDITY_SECONDS);
+      const expiryTs = Date.now() + OTP_VALIDITY_SECONDS * 1000;
+      setOtpExpiry(expiryTs);
 
       setTimeout(() => otpRefs.current[0]?.focus(), 50);
     } catch (e) {
@@ -60,6 +77,14 @@ const PatientLogin = () => {
       return;
     }
 
+    if (!otpExpiry || Date.now() > otpExpiry) {
+      toast.error("OTP expired. Please request a new code.");
+      setOtpSent(false);
+      setOtp("".padEnd(6, ""));
+      setOtpExpiry(null);
+      return;
+    }
+
     try {
       setLoading(true);
       toast.loading("Verifying OTP...", { id: "verify" });
@@ -75,35 +100,14 @@ const PatientLogin = () => {
       const { token, patient } = res.data;
       if (token) localStorage.setItem("token", token);
       if (patient) {
-        localStorage.setItem("user", JSON.stringify(patient));
-        // store patientId for chat page compatibility (handle different backend shapes)
+        localStorage.setItem("user", JSON.stringify(patient._id));
         const pid = patient._id || patient.id || patient.patientId || null;
         if (pid) {
           localStorage.setItem("patientId", pid);
-          // also seed initial conversation with "Analyzing" message
-          try {
-            const conv = {
-              id: `conv_welcome_${Date.now()}`,
-              title: "Analyzing",
-              lastMessage: "Analyzing",
-              timestamp: Date.now(),
-              messages: [
-                {
-                  id: 'system-analyzing',
-                  content: "Analyzing",
-                  timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                  isUser: false
-                }
-              ]
-            };
-            localStorage.setItem(`chat_history_${pid}`, JSON.stringify([conv]));
-          } catch (e) {
-            // ignore localStorage errors
-            console.error("Error seeding initial conversation:", e);
-          }
         }
       }
-      
+
+      setOtpExpiry(null);
       navigate("/patient-dashboard");
     } catch (e) {
       console.error("Verification error:", e.response?.data || e.message);
@@ -228,7 +232,7 @@ const PatientLogin = () => {
             <div className="text-center text-sm text-gray-500 mt-4">
               Didn’t get the code?{" "}
               {timer > 0 ? (
-                <span>Time Left: 00:{String(timer).padStart(2, "0")}</span>
+                <span>Time Left: {String(Math.floor(timer / 60)).padStart(2, "0")}:{String(timer % 60).padStart(2, "0")}</span>
               ) : (
                 <span
                   onClick={() => !loading && sendCode()}
@@ -246,8 +250,9 @@ const PatientLogin = () => {
                 onClick={() => {
                   setOtpSent(false);
                   setOtp("".padEnd(6, ""));
-                  setTimer(60);
+                  setTimer(OTP_VALIDITY_SECONDS);
                   setPhone("");
+                  setOtpExpiry(null);
                 }}
                 className="text-sm underline text-gray-500"
               >

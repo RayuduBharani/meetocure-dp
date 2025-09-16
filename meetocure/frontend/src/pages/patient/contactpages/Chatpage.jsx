@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Trash } from "lucide-react";
 import TopIcons from "../../../components/PatientTopIcons";
 
 /* Contact card showing avatar, name and role */
@@ -122,7 +122,7 @@ const ChatPage = () => {
 
         <div className="flex items-center gap-3">
           <button onClick={handleDeleteAll} className="text-sm text-red-600 hover:underline mr-4">
-            Delete All Chats
+            <Trash />
           </button>
           <TopIcons />
         </div>
