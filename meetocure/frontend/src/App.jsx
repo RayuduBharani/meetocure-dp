@@ -1,8 +1,8 @@
 import LinkDoctorsToHospital from "./pages/admin/LinkDoctorsToHospital";
 // {/* Admin: Link Doctors to Hospital */ }
 // <Route path="/admin/link-doctors-hospital" element={<LinkDoctorsToHospital />} />
-import React, {useEffect } from "react";
-import { Routes, Route, Router, useNavigate } from "react-router-dom";
+import React from "react";
+import { Routes, Route, Router } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
 // Common

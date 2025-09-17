@@ -82,22 +82,28 @@ const DateTime = () => {
     // clear previously loaded slots when selecting a new date
     setAvailableSlots([]);
     setSlotsError("");
+
+    // automatically fetch slots for this date
+    fetchAvailabilityForDate(formatted);
   };
 
   // Fetch availability for doctor and pick slots for selected date
-  const fetchAvailabilityForDate = async () => {
+  const fetchAvailabilityForDate = async (dateParam) => {
     if (!doctorId) {
       toast.error("Doctor ID missing");
       return;
     }
-    if (!selectedDate) {
+
+    // accept either explicit dateParam (string) or fallback to selectedDate state
+    const dateToUse = dateParam || selectedDate;
+    if (!dateToUse) {
       toast.error("Please select a date first");
       return;
     }
 
     // if we already fetched availabilityDays once, reuse it
     if (availabilityDays) {
-      const day = availabilityDays.find(d => d.date === selectedDate);
+      const day = availabilityDays.find(d => d.date === dateToUse);
       setAvailableSlots(day ? day.slots || [] : []);
       if (!day) setSlotsError("No slots set for this date");
       return;
@@ -112,7 +118,7 @@ const DateTime = () => {
       const days = data?.days || [];
       setAvailabilityDays(days);
 
-      const day = days.find(d => d.date === selectedDate);
+      const day = days.find(d => d.date === dateToUse);
       if (day && Array.isArray(day.slots) && day.slots.length > 0) {
         setAvailableSlots(day.slots);
       } else {
@@ -241,19 +247,7 @@ const DateTime = () => {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold">Select Hour</h2>
           {/* Load times button */}
-          <div>
-            {selectedDate ? (
-              <button
-                onClick={fetchAvailabilityForDate}
-                disabled={loadingSlots}
-                className="px-4 py-2 rounded-lg bg-[#0A4D68] text-white text-sm"
-              >
-                {loadingSlots ? "Loading..." : "Load Times"}
-              </button>
-            ) : (
-              <span className="text-sm text-gray-400">Select a date to load available times</span>
-            )}
-          </div>
+
         </div>
 
         {/* Display available slots from backend */}

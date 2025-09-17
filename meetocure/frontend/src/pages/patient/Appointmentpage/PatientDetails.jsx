@@ -96,9 +96,9 @@ const PatientDetails = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const storedPatient = localStorage.getItem("user");
-      const patientId = storedPatient ? JSON.parse(storedPatient)._id : null;
-
+      const storedPatient = localStorage.getItem("patientId");
+      const patientId = storedPatient;
+ 
       if (!patientId) {
         toast.error("Patient not found. Please log in again.");
         setLoading(false);

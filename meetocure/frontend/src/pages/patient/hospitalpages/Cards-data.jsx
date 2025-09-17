@@ -78,7 +78,7 @@ const App = () => {
             try {
                 setLoading(true);
                 // Fixed localhost URL - remove https for localhost
-                const response = await fetch('http://localhost:5000/api/hospitals');
+                const response = await fetch('http://localhost:5000/api/hospitals/hospitallogins');
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -86,7 +86,28 @@ const App = () => {
                 
                 const data = await response.json();
             
-                setHospitals(Array.isArray(data) ? data : []);
+                // Normalize items so filters operate on consistent fields
+                const normalized = Array.isArray(data) ? data.map(h => ({
+                    id: h.id || h._id || h.hospitalId || null,
+                    _id: h._id || h.id || null,
+                    hospitalName: h.hospitalName || h.name || h.title || '',
+                    name: h.name || h.hospitalName || '',
+                    category: h.category || h.type || (h.tags && h.tags[0]) || 'Other',
+                    type: h.type || h.category || 'Other',
+                    specialties: Array.isArray(h.specialties) ? h.specialties : (h.speciality ? [h.speciality] : (h.specialtiesString ? h.specialtiesString.split(',') : [])),
+                    specialty: (h.specialties && h.specialties[0]) || h.specialty || '',
+                    location: h.location || h.city || h.region || '',
+                    address: h.address || h.vicinity || h.location || '',
+                    doctors: Array.isArray(h.doctors) ? h.doctors : (Array.isArray(h.doctorList) ? h.doctorList : []),
+                    isFavorite: !!h.isFavorite,
+                    hospitalImage: h.hospitalImage || h.image || h.photo || h.coverImage || '/assets/hospital-default.jpg',
+                    rating: h.rating || h.avgRating || null,
+                    reviewCount: h.reviewCount || h.reviews || 0,
+                    distance: h.distance || 0,
+                    raw: h
+                })) : [];
+
+                setHospitals(normalized);
             } catch (error) {
                 console.error('Error fetching hospitals:', error);
                 // Set empty array on error
@@ -98,8 +119,7 @@ const App = () => {
         };
 
         fetchHospitals();
-    }, []); // Empty dependency array
-
+    }, []);
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -154,96 +174,98 @@ const App = () => {
     }, [navigate]);
 
     // Stable filter options array
-    const filterOptions = useMemo(() => 
-        ['All', 'Hospital', 'Clinic', 'Dental', 'Laboratory', 'Vaccination', 'Ayurvedic', 'Pharmacy'], 
-        []
-    );
-
+   const filterOptions = useMemo(() => {
+    const setC = new Set(['All','Clinic']);
+    hospitals.forEach(h => {
+        if (h.category) setC.add(h.category);
+        if (h.type) setC.add(h.type);
+    });
+    return Array.from(setC);
+}, [hospitals]);
     // Memoized filtering and sorting
-    const sortedAndFilteredHospitals = useMemo(() => {
-        if (!Array.isArray(hospitals) || hospitals.length === 0) return [];
+const sortedAndFilteredHospitals = useMemo(() => {
+    if (!Array.isArray(hospitals) || hospitals.length === 0) return [];
 
-        let processedHospitals = [...hospitals];
-        
-        // Category filter
-        if (activeFilter !== 'All') {
-            processedHospitals = processedHospitals.filter(h => {
-                return h.category === activeFilter || h.type === activeFilter;
+    let processedHospitals = [...hospitals];
+    
+    // Category filter
+    if (activeFilter !== 'All') {
+        processedHospitals = processedHospitals.filter(h => {
+            return String(h.category).toLowerCase() === String(activeFilter).toLowerCase()
+                || String(h.type).toLowerCase() === String(activeFilter).toLowerCase();
+        });
+    }
+
+    // Doctor availability filter
+    if (doctorFilter !== 'All') {
+        processedHospitals = processedHospitals.filter(h => {
+            const doctorCount = Array.isArray(h.doctors) ? h.doctors.length : 0;
+            if (doctorFilter === 'With Doctors') return doctorCount > 0;
+            if (doctorFilter === 'No Doctors') return doctorCount === 0;
+            return true;
+        });
+    }
+
+    // Search filter
+    if (searchTerm.trim()) {
+        const search = searchTerm.toLowerCase().trim();
+        processedHospitals = processedHospitals.filter(h =>
+            (h.name || h.hospitalName || '').toLowerCase().includes(search) ||
+            (h.specialty || '').toLowerCase().includes(search) ||
+            (Array.isArray(h.specialties) ? h.specialties.join(' ').toLowerCase() : '').includes(search) ||
+            (h.location || '').toLowerCase().includes(search) ||
+            (h.address || '').toLowerCase().includes(search)
+        );
+    }
+
+    // Sort by favorites first
+    if (sortCriteria === 'Liked') {
+        processedHospitals = processedHospitals.filter(h => h.isFavorite);
+    }
+
+    // Apply sorting (unchanged)
+    switch (sortCriteria) {
+        case 'Distance':
+            processedHospitals.sort((a, b) => {
+                const aDistance = a.distance || 0;
+                const bDistance = b.distance || 0;
+                return sortOrder === 'asc' ? aDistance - bDistance : bDistance - aDistance;
             });
-        }
-
-        // Doctor availability filter
-        if (doctorFilter !== 'All') {
-            processedHospitals = processedHospitals.filter(h => {
-                const doctorCount = h.doctors ? h.doctors.length : 0;
-                if (doctorFilter === 'With Doctors') return doctorCount > 0;
-                if (doctorFilter === 'No Doctors') return doctorCount === 0;
-                return true;
+            break;
+        case 'Review':
+            processedHospitals.sort((a, b) => {
+                const aRating = a.rating || 0;
+                const bRating = b.rating || 0;
+                return sortOrder === 'asc' ? aRating - bRating : bRating - aRating;
             });
-        }
+            break;
+        case 'Doctors':
+            processedHospitals.sort((a, b) => {
+                const aCount = a.doctors ? a.doctors.length : 0;
+                const bCount = b.doctors ? b.doctors.length : 0;
+                return sortOrder === 'asc' ? aCount - bCount : bCount - aCount;
+            });
+            break;
+        case 'Name':
+            processedHospitals.sort((a, b) => {
+                const aName = a.name || a.hospitalName || '';
+                const bName = b.name || b.hospitalName || '';
+                return sortOrder === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName);
+            });
+            break;
+        case 'Default':
+        default:
+            // Use a stable sort based on ID
+            processedHospitals.sort((a, b) => {
+                const aId = a.id || a._id || 0;
+                const bId = b.id || b._id || 0;
+                return String(aId).localeCompare(String(bId));
+            });
+            break;
+    }
 
-   
-
-        // Search filter
-        if (searchTerm.trim()) {
-            const search = searchTerm.toLowerCase().trim();
-            processedHospitals = processedHospitals.filter(h =>
-                h.name?.toLowerCase().includes(search) ||
-                h.hospitalName?.toLowerCase().includes(search) ||
-                h.specialty?.toLowerCase().includes(search) ||
-                h.location?.toLowerCase().includes(search) ||
-                h.address?.toLowerCase().includes(search)
-            );
-        }
-
-        // Sort by favorites first
-        if (sortCriteria === 'Liked') {
-            processedHospitals = processedHospitals.filter(h => h.isFavorite);
-        }
-
-        // Apply sorting
-        switch (sortCriteria) {
-            case 'Distance':
-                processedHospitals.sort((a, b) => {
-                    const aDistance = a.distance || 0;
-                    const bDistance = b.distance || 0;
-                    return sortOrder === 'asc' ? aDistance - bDistance : bDistance - aDistance;
-                });
-                break;
-            case 'Review':
-                processedHospitals.sort((a, b) => {
-                    const aRating = a.rating || 0;
-                    const bRating = b.rating || 0;
-                    return sortOrder === 'asc' ? aRating - bRating : bRating - aRating;
-                });
-                break;
-            case 'Doctors':
-                processedHospitals.sort((a, b) => {
-                    const aCount = a.doctors ? a.doctors.length : 0;
-                    const bCount = b.doctors ? b.doctors.length : 0;
-                    return sortOrder === 'asc' ? aCount - bCount : bCount - aCount;
-                });
-                break;
-            case 'Name':
-                processedHospitals.sort((a, b) => {
-                    const aName = a.name || a.hospitalName || '';
-                    const bName = b.name || b.hospitalName || '';
-                    return sortOrder === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName);
-                });
-                break;
-            case 'Default':
-            default:
-                // Use a stable sort based on ID
-                processedHospitals.sort((a, b) => {
-                    const aId = a.id || a._id || 0;
-                    const bId = b.id || b._id || 0;
-                    return String(aId).localeCompare(String(bId));
-                });
-                break;
-        }
-
-        return processedHospitals;
-    }, [hospitals, searchTerm, activeFilter, doctorFilter, sortCriteria, sortOrder]);   
+    return processedHospitals;
+}, [hospitals, searchTerm, activeFilter, doctorFilter, sortCriteria, sortOrder]);
 
 
 

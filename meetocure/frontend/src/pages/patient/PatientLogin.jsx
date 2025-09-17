@@ -89,6 +89,7 @@ const PatientLogin = () => {
       setLoading(true);
       toast.loading("Verifying OTP...", { id: "verify" });
 
+
       const res = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/auth/patient/verify-otp`,
         { phone, otp }

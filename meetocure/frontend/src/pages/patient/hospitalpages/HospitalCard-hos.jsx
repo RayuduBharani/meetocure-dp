@@ -29,7 +29,7 @@ const HospitalCard = React.memo(({ hospital, onClick, onToggleFavorite }) => {
     const [isFavorite, setIsFavorite] = useState(hospital?.isFavorite || false);
     const [imageError, setImageError] = useState(false);
     const [imageLoading, setImageLoading] = useState(true);
-    
+    console.log(hospital);
     const handleFavoriteClick = (e) => {
         e.stopPropagation(); // Prevent card click when clicking favorite
         setIsFavorite(!isFavorite);
