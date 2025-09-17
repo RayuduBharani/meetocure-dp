@@ -8,7 +8,7 @@ import HeroCarousel from "../../components/HeroBanners";
 import SidebarNavPatient from "../../components/SidebarNavPatient";
 import FloatingContactButton from "../../components/FloatingContactButton";
 import CardList from './CardList';
-import HospitalCardList from './hospitalpages/HospitalCard-hos';
+import {HospitalCardList} from './hospitalpages/HospitalCard-hos';
 import DoctorCardList from "./DoctorCard";
 
 

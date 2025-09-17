@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import HospitalCard from './HospitalCard-hos';
+import {HospitalCard} from './HospitalCard-hos';
 import { SearchIcon, SortIcon } from './Icons';
 import PatientTopIcons from '../../../components/PatientTopIcons';
 import { FaArrowLeft } from 'react-icons/fa';
@@ -48,6 +48,8 @@ const App = () => {
     const sortDropdownRef = useRef(null);
     const isInitialMount = useRef(true);
 
+
+
     // Prevent accidental back navigation on mobile
     useEffect(() => {
         // Prevent browser back button issues
@@ -83,7 +85,7 @@ const App = () => {
                 }
                 
                 const data = await response.json();
-                console.log('Hospitals data:', data);
+            
                 setHospitals(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error('Error fetching hospitals:', error);
@@ -180,6 +182,8 @@ const App = () => {
             });
         }
 
+   
+
         // Search filter
         if (searchTerm.trim()) {
             const search = searchTerm.toLowerCase().trim();
@@ -239,7 +243,11 @@ const App = () => {
         }
 
         return processedHospitals;
-    }, [hospitals, searchTerm, activeFilter, doctorFilter, sortCriteria, sortOrder]);
+    }, [hospitals, searchTerm, activeFilter, doctorFilter, sortCriteria, sortOrder]);   
+
+
+
+        console.log('Hospitals data:', sortedAndFilteredHospitals);
 
     if (loading) {
         return (
@@ -424,10 +432,11 @@ const App = () => {
                 </div>
 
                 {/* Hospital Cards Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 items-stretch">
                     {sortedAndFilteredHospitals.length > 0 ? (
                         sortedAndFilteredHospitals.map(hospital => (
-                            <div key={hospital.id || hospital._id} className="w-full">
+                            <div key={hospital.id || hospital._id} className="w-full min-w-0">
+                                
                                 <HospitalCard
                                     hospital={hospital}
                                     onToggleFavorite={handleToggleFavorite}

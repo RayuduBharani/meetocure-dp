@@ -67,26 +67,26 @@ import AppointmentProvider from "./contexts/AppointmentContext.jsx";
 import DcoterVerificationPending from "./pages/doctor/DcoterVerificationPending.jsx";
 
 function App() {
-    const navigate=useNavigate();
+    // const navigate=useNavigate();cd
 
 
-  useEffect(() => {
-    // Request notification permission on component mount 
-    const tokenCheck=localStorage.getItem("token");
-    const patientId=localStorage.getItem("patientId");
-    if(tokenCheck && patientId){
-      navigate("/patient-dashboard");
-    }
+  // useEffect(() => {
+  //   // Request notification permission on component mount 
+  //   const tokenCheck=localStorage.getItem("token");
+  //   const patientId=localStorage.getItem("patientId");
+  //   if(tokenCheck && patientId){
+  //     navigate("/patient-dashboard");
+  //   }
 
 
-    if (Notification.permission !== 'granted') {
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-          console.log('Notification permission granted.');
-        }
-      });
-    }
-  }, []);
+  //   if (Notification.permission !== 'granted') {
+  //     Notification.requestPermission().then(permission => {
+  //       if (permission === 'granted') {
+  //         console.log('Notification permission granted.');
+  //       }
+  //     });
+  //   }
+  // }, []);
 
 
 

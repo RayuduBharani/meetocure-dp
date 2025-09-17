@@ -55,7 +55,7 @@ const HospitalCard = React.memo(({ hospital, onClick, onToggleFavorite }) => {
 
     return (
         <div 
-            className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group"
+            className="w-full bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group"
             onClick={onClick}
         >
             {/* Hospital Image */}
@@ -77,7 +77,7 @@ const HospitalCard = React.memo(({ hospital, onClick, onToggleFavorite }) => {
                         <img
                             src={hospital.hospitalImage}
                             alt={hospital.hospitalName || hospital.name || "Hospital"}
-                            className={`w-full h-full object-cover transition-opacity duration-200 ${
+                            className={`block w-full h-full object-cover transition-opacity duration-200 ${
                                 imageLoading ? 'opacity-0' : 'opacity-100'
                             }`}
                             onError={handleImageError}
@@ -320,4 +320,5 @@ const HospitalCardList = ({ title = "Nearby Hospitals" }) => {
     );
 };
 
-export default HospitalCardList;
+export  {HospitalCard, HospitalCardList};
+
